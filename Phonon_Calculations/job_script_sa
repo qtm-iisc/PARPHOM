@@ -1,0 +1,20 @@
+#!/bin/sh 
+#This job should be redirected to idqueue queue
+#PBS -N SA_3X3
+#PBS -l select=20:ncpus=24
+#PBS -l walltime=12:00:00
+#PBS -l place=scatter
+#PBS -l accelerator_type="None"
+#PBS -S /bin/sh@sdb -V
+
+. /opt/modules/default/init/sh
+
+module swap PrgEnv-cray PrgEnv-intel
+module load intel 
+module load cray-hdf5
+cd $PBS_O_WORKDIR
+
+aprun -j 1 -n 480 -N 24 ./PhonFreq inp.dat_sa3X3 > mos2_sa3X3_2
+#aprun -j 1 -n 24 -N 24 ./PhonFreq inp.dat_graphene > graphene_1.61
+#aprun -j 1 -n 1032 -N 24 ./out.o > correct_3X1
+

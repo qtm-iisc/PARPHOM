@@ -1,0 +1,12 @@
+'/mnt/lustre/phy3/physhinj/Parallel_Phonon/DATA_FILES/MoS2/1.47/2x1x1/'
+'lammps'
+'.dat'
+18228
+6
+'A'
+32 
+32
+11
+'q_points.dat'
+'FC_hdf5'
+'force_constants'

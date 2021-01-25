@@ -1,0 +1,12 @@
+'/mnt/lustre/phy3/physhinj/Parallel_Phonon/DATA_FILES/Graphene/1.61/'
+'lammps.dat'
+'_final_symmetrized_1.61_drip_ppp'
+5044
+1
+'M'
+32 
+32
+26
+'q_points.dat'
+'FC_hdf5'
+'force_constants'
