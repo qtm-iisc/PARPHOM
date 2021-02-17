@@ -4,8 +4,9 @@
     ! Program to read the force constants, distribute it among the processes,
     ! create the dynamical matrix and diagonalize it
     ! -----------------------------------------------------------------------
-    USE HDF5 
+    USE HDF5
     IMPLICIT NONE
+    INCLUDE 'mpif.h' 
 
     ! Defining the variables
     ! ----------------------
@@ -102,7 +103,9 @@
 
     CHARACTER(500) :: input_file
 
+       ! ** Time **
 
+    DOUBLE PRECISION :: st_time, end_time
 
     ! ------------ 
     ! Main Program
@@ -216,6 +219,8 @@
     
     ! ---------- Load the HDF5 file and the dataset in each processor ----- !
 
+    st_time = MPI_Wtime()
+
     ! open hdf5 interface
     CALL h5open_f(error) 
     
@@ -279,10 +284,13 @@
     CALL h5fclose_f(file_id, error)
     CALL h5close_f(error)
 
+    end_time = MPI_Wtime()
+
+
     ! ------ Force constant files read complete ----------------
     
     IF (isroot) THEN
-      WRITE(*,*) "Force Constant Read"
+        WRITE(*,*) "Force Constant Read in ", end_time-st_time, " sec"
     END IF
 
     ! ------------------------
@@ -292,6 +300,8 @@
 
     DO q_index = 1, nqpt
         
+        st_time = MPI_Wtime()    
+
         q_pt(1) = q_array(q_index,1)
         q_pt(2) = q_array(q_index,2)
         q_pt(3) = q_array(q_index,3)
@@ -454,12 +464,15 @@
         DEALLOCATE(Z)
         DEALLOCATE(dyn_matrix)
 
+        end_time = MPI_Wtime()
+
         IF (isroot) THEN
-           WRITE(*,*) q_pt
+           WRITE(*,'(3F7.6X,A,F13.3,A)') q_pt(1), q_pt(2), q_pt(3)," done in ",end_time-st_time," sec."
            DO ia=1,3*natom
               WRITE(*,'(A,I5,A,F16.6)') 'w(',ia,') = ', SQRT(ABS(W(ia)))*15.633302*33.35641* &
                                                         SIGN(1.00,W(ia))
            END DO
+
         END IF
         DEALLOCATE(W)
 
