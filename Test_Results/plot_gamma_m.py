@@ -8,11 +8,11 @@ plt.rcParams['xtick.labelsize'] = 20
 plt.rcParams['ytick.labelsize'] = 20
 
 natom = 5044
-nqpt = 21
+nqpt = 51
 
 n_to_plot = 70
 
-fil = 'tblg_1.61_qtm'
+fil = 'tblg_1.61_51pts'
 
 f = open(fil,'r')
 data = f.readlines()

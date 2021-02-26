@@ -1,6 +1,6 @@
 import numpy as np
 
-nqpt = 20
+nqpt = 50
 start_k = np.array([0,0,0])
 end_k = np.array([0.5,0.,0])
 
