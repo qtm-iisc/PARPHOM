@@ -7,12 +7,12 @@ plt.rcParams['axes.titlesize'] = 25
 plt.rcParams['xtick.labelsize'] = 20
 plt.rcParams['ytick.labelsize'] = 20
 
-natom = 5044
+natom = 15124
 nqpt = 51
 
 n_to_plot = 70
 
-fil = 'tblg_1.61_51pts'
+fil = 'graphene_0.93'
 
 f = open(fil,'r')
 data = f.readlines()
