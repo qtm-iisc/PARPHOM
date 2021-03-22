@@ -439,6 +439,16 @@
                      abstol, numval, numvec, W, orfac, Z, 1, 1, descEigvec, work, lwork, rwork, &
                      lrwork, iwork, liwork, ifail, iclustr, gap, info)
 
+        isok = (info.eq.0)
+        IF (.not.isok) THEN
+          IF (isroot) THEN
+             WRITE(*,*) 'PZHEEVX returns info = ', info, " while allocating work arrays."
+          END IF
+          GOTO 99
+        END IF
+
+
+
         lwork = int(work(1)+1)
         lrwork = int(rwork(1)+1)
         liwork = int(iwork(1)+1)
@@ -455,6 +465,7 @@
                      abstol, numval, numvec, W, orfac, Z, 1, 1, descEigvec, work, lwork, rwork, &
                      lrwork, iwork, liwork, ifail, iclustr, gap, info)
 
+
         DEALLOCATE(work)
         DEALLOCATE(iwork)
         DEALLOCATE(rwork)
@@ -463,6 +474,16 @@
         DEALLOCATE(iclustr)
         DEALLOCATE(Z)
         DEALLOCATE(dyn_matrix)
+
+        isok = (info.eq.0)
+        IF (.not.isok) THEN
+          IF (isroot) THEN
+             WRITE(*,*) 'PZHEEVX returns info = ', info
+          END IF
+          GOTO 99
+        END IF
+
+
 
         end_time = MPI_Wtime()
 
