@@ -1,0 +1,38 @@
+# -----------------------------------------------
+#     Input file for computing Phonon Modes
+# -----------------------------------------------
+#
+# Location
+/home/indrajit/phonon/graphene/twist_7.3/
+# Name of the LAMMPS structure file
+lammps
+# File Suffix
+.dat
+# Number of Atoms
+148
+# Atom Types
+1
+# LAMMPS Atom Style
+M
+# q-point file
+q_points.dat
+# Number of q points
+51
+# Number of simultaneous calculations to be done
+1
+# MB
+30
+# NB
+30
+# Force File
+FC_hdf5
+# Force Dataset Name
+force_constants
+# Compute Eigenvectors (True/False)
+False
+# Eigenvalue Range 
+A
+# Bounds for eigenvalue interval
+-2.5  250
+# Indices of eigenvalues to be computed 
+1  1000
