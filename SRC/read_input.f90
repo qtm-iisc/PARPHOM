@@ -68,5 +68,6 @@ SUBROUTINE read_input_file(inp_file)
   CLOSE(unit=12)
 
   RETURN
+
 END SUBROUTINE 
 

@@ -1,4 +1,5 @@
 SRC_DIR = ./SRC/
+EXAMPLE_DIR = ./Examples/
 
 MODS=$(wildcard $(SRC_DIR)mod*.f90)
 MODOBJS=$(patsubst %.f90, %.o,$(MODS))
@@ -39,4 +40,4 @@ debug:
 
 .PHONY: clean
 clean:
-	rm -f $(SRC_DIR)*.o $(SRC_DIR)*.mod $(EXE)
+	rm -f $(SRC_DIR)*.o $(SRC_DIR)*.mod $(EXE) $(EXAMPLE_DIR)P_vec_*

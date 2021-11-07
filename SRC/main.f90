@@ -8,7 +8,6 @@ program Phonon_frequencies
     character(500) :: input_file
     integer :: i,j
 
-
     call mpi_init(mpierr)
     mpi_global%comm = MPI_COMM_WORLD
     call mpi_comm_size(mpi_global%comm, mpi_global%size_, mpierr)
@@ -43,7 +42,7 @@ program Phonon_frequencies
     ! --------------------------------------------------------
   
     allocate(blacs_grid%context(no_of_groups))
-    call get_blacs_icontexts()
+    call get_blacs_icontexts_single_q()
     call blacs_gridinfo( blacs_grid%context, blacs_grid%nprow, blacs_grid%npcol, &
                          blacs_grid%myprow,  blacs_grid%mypcol)
 
@@ -51,19 +50,27 @@ program Phonon_frequencies
         write(*,*) "BLACS grid initiated"
     end if
 
-    write(*,'(8I6,X,4I8)') mpi_global%rank, mpi_local%color, mpi_local%rank,     &
-                           mpi_local%size_, blacs_grid%nprow, blacs_grid%npcol,  &
+    if (debug.eq.True) then
+    write(*,'(8I6,X,4I8)') mpi_global%rank, mpi_global%color, mpi_global%rank,     &
+                           mpi_global%size_, blacs_grid%nprow, blacs_grid%npcol,  &
                            blacs_grid%myprow, blacs_grid%mypcol, blacs_grid%context
-               
+    end if
     ! Read q points in each group 
     ! ---------------------------
-    call distribution_length(q_file%nqpt, mpi_local%color-1, no_of_groups, st_q, en_q)
+    call distribution_length(q_file%nqpt, mpi_global%color-1, no_of_groups, st_q, en_q)
+    write(*,*) st_q, en_q
     allocate(q_file%points((en_q-st_q+1),3))
     call read_q_file()
     call mpi_barrier(mpi_global%comm, mpierr)
     if (mpi_global%rank.eq.0) then
         write(*,*) "Q file read"
     end if
+    write(*,*) q_file%nqpt
+    call mpi_barrier(mpi_global%comm, mpierr)
+    if (mpi_global%rank.eq.0) then
+        write(*,'(3F10.2)') ((q_file%points(j,i),i=1,3),j=1,q_file%nqpt) 
+    end if
+    
     
    
     ! Read Force Constants
@@ -105,17 +112,20 @@ program Phonon_frequencies
     allocate(W(3*moire%natom))
     do q_index = 1,(en_q-st_q)
         call create_dynamical_matrix()
-        write(*,*) "Dynamical Matrix for q = ", q_index, "created in ", mpi_global%rank
+        call mpi_barrier(mpi_global%comm, mpierr)
+        if (mpi_global%rank.eq.0) then
+            write(*,*) "Dynamical Matrix for q = ", q_index, "created "
+        end if
         call diagonalize_matrix()
         call write_output()
         dynmat%a = cmplx(0.0,0.0)
         evec%a = cmplx(0.0,0.0)
-        call mpi_barrier(mpi_local%comm, mpierr) 
+        call mpi_barrier(mpi_global%comm, mpierr) 
     end do
 
     call blacs_exit(1) 
     call mpi_barrier(mpi_global%comm, mpierr) 
-    call mpi_comm_free(mpi_local%comm, mpierr)
+!    call mpi_comm_free(mpi_local%comm, mpierr)
 
     ! Deallocate arrays
     ! -----------------
@@ -130,7 +140,6 @@ program Phonon_frequencies
     deallocate(fc%a)
     deallocate(q_file%points)
    
-    write(*,*) "Completed till here", mpi_global%rank
     call mpi_finalize(mpierr)
 
 end program

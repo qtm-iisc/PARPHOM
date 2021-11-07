@@ -59,7 +59,6 @@ end subroutine
 !    return
 !end subroutine
 
-
 subroutine get_blacs_icontexts()
 
     use mpi
@@ -135,5 +134,34 @@ subroutine get_blacs_icontexts()
     blacs_grid%npcol = dim_(mpi_local%color,2)
     deallocate(icontxts)
     deallocate(dim_)
+    return
+end subroutine
+
+
+subroutine get_blacs_icontexts_single_q()
+
+    use mpi
+    use global_variables
+
+    ! Subroutine for obtaining blacs context
+    ! --------------------------------------
+
+    implicit none
+    integer :: i,j,k, global_contxt
+    character(500) :: format_
+
+    call get_color(mpi_global%rank, mpi_global%size_, no_of_groups, &
+                   mpi_global%color, mpi_global%key, mpi_global%size_)
+
+    do i = int(sqrt(real(mpi_global%size_)))+1,1,-1
+        blacs_grid%nprow = i
+        blacs_grid%npcol = mpi_global%size_/blacs_grid%nprow
+        if (blacs_grid%nprow*blacs_grid%npcol.eq.mpi_global%size_) goto 11
+    end do
+11  continue
+    
+    call blacs_get(-1,0,global_contxt)
+    blacs_grid%context = global_contxt
+    call blacs_gridinit(blacs_grid%context, 'C', blacs_grid%nprow, blacs_grid%npcol)
     return
 end subroutine

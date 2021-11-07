@@ -8,8 +8,8 @@ subroutine write_output()
     integer :: i
     character(500) :: f_name
 
-    if (mpi_local%rank==0) then
-        write(f_name,43) mpi_local%color-1, q_index-1
+    if (mpi_global%rank==0) then
+        write(f_name,43) mpi_global%color-1, q_index-1
         open(unit=20, file=trim(adjustl(f_name)),action='write')
         write(20,'(3(F8.5X))') q_file%points(q_index,:)
         do i=1,pzheevx_vars%num_eval_comp

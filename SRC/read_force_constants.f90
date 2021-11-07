@@ -67,7 +67,7 @@ subroutine read_force_constants()
     en_time = MPI_Wtime()
 
     if ((blacs_grid%myprow==0).and.(blacs_grid%mypcol==0)) then
-        write(*,*) "Force constant read in group ", mpi_local%color," in ", en_time-st_time, " sec."
+        write(*,*) "Force constant read in group ", mpi_global%color," in ", en_time-st_time, " sec."
     end if
 
     return

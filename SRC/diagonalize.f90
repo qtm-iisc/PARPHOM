@@ -104,8 +104,8 @@ subroutine diagonalize_matrix()
 
     en_time = MPI_WTIME()
 
-    if (mpi_local%rank==0) then
-        write(*,'(A,I4,A,F10.4,A)') "Diagoanlizations completed in group ",mpi_local%color, &
+    if (mpi_global%rank==0) then
+        write(*,'(A,I4,A,F10.4,A)') "Diagoanlizations completed in group ",mpi_global%color, &
                    " in ", en_time-st_time, " sec."
     end if
 
