@@ -1,6 +1,6 @@
 Changes to the code:
 
-=================
+
 phonolammps_0.8.1
 =================
 * __init__serial.py: serial version of the code
