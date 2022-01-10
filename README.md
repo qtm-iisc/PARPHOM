@@ -7,8 +7,8 @@ Code to calculate the phonon frequencies in Moire systems.
 The prerequisites to run this code are:
 
 >
->   Parallel HDF5 (checked for v1.12.0.0 and v1.12.1) 
->   Scalapack (checked with Intel MKL and AMD Scalapack)
+>   Parallel HDF5 (checked for v1.12.0.0 and v1.12.1)   
+>   Scalapack (checked with Intel MKL and AMD Scalapack)  
 >
 
 ## Instructions for usage
