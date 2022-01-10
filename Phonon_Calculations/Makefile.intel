@@ -1,0 +1,50 @@
+SRC_DIR = ./SRC/
+
+MODS=$(wildcard $(SRC_DIR)mod*.F90)
+MODOBJS=$(patsubst %.F90, %.o,$(MODS))
+
+SRCS=$(filter-out $(MODS), $(wildcard $(SRC_DIR)*.F90))
+OBJS=$(patsubst %.F90, %.o,$(SRCS))
+
+EXE = moire_phonons.x
+
+FC = h5pfc
+
+BLAS_LIBS = ${MKLROOT}/lib/intel64/libmkl_blas95_ilp64.a  
+LAPACK_LIBS = ${MKLROOT}/lib/intel64/libmkl_lapack95_ilp64.a  
+SCALAPACK_LIBS = -L${MKLROOT}/lib/intel64 -lmkl_scalapack_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_ilp64 -liomp5 -lpthread -lm -ldl 
+
+FLFLAGS = ${BLAS_LIBS} ${LAPACK_LIBS} ${SCALAPACK_LIBS}
+FCFLAGS = -O2 -g -traceback -ip -assume bscc -I${MKLROOT}/include/intel64/ilp64 -i8 -I${MKLROOT}/include -fPIC -Winline -warn unused 
+
+CPP = cpp -P 
+CPPFLAGS = -D__DEBUG #-D__KPOOL -D__DEBUG
+
+
+all: $(MODOBJS) $(OBJS)
+	$(FC) $(FCFLAGS) -o $(EXE) $(OBJS) $(MODOBJS) $(FLFLAGS)
+
+$(MODOBJS): %.o: %.F90
+# $(CPP) $(CPPFLAGS) $< | sed '/^#pragma/d' > $*.f90
+	$(CPP) $(CPPFLAGS) $< $*.f90
+	$(FC) $(FCFLAGS) -module $(SRC_DIR) -c $*.f90 -o $@
+
+$(OBJS): %.o: %.F90
+	$(CPP) $(CPPFLAGS) $< $*.f90
+	$(FC) $(FCFLAGS) -c $*.f90 -o $@ 
+
+debug:
+	@echo "SRCS=$(SRCS)"
+	@echo "OBJS=$(OBJS)"
+	@echo "MODS=$(MODS)"
+	@echo "MODOBJS=$(MODOBJS)"
+	@echo "EXE=$(EXE)"
+	@echo "FC =$(FC)"
+	@echo "FLFLAGS=$(FLFLAGS)"
+	@echo "FCFLAGS=$(FCFLAGS)"
+	@echo "CPP=$(CPP)"
+	@echo "CPPFLAGS=$(CPPFLAGS)"
+
+.PHONY: clean
+clean:
+	rm -f $(SRC_DIR)*.o $(SRC_DIR)*.mod $(EXE) $(SRC_DIR)*.f90
