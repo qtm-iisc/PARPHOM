@@ -15,6 +15,16 @@ The prerequisites to run this code are:
 
 ### For the Force constant generation
 
+#### Step 1: 
+Prepare a LAMMPS input file
+#### Step 2:
+Make sure you have the serial LAMMPS python wrapper (the MPI python wrapper is not supported for now)
+#### Step 3:
+Generate the force constant using 
+```
+mpiexec -np <no. of cores> Force_Constant_Generation/get_force_constant.py -i <LAMMPS input File> -o <Name of the output File> -d <displacement of each atom>
+```
+
 ### For the Phonon frequency calculation
 
 Build the code using:
