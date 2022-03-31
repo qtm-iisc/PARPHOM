@@ -88,6 +88,6 @@ module global_variables
     character(500) :: output_file_name, output_file_location
 
     integer , dimension(8) :: date_time
-    character(len=500), parameter :: date_format = '(A,X,2(I2,A),I4,3(A,I2.2),A,SP,I0,A,SS,I0)'
+    character(len=500), parameter :: date_format = '(A,X,2(I0,A),I4,3(A,I2.2),A,SP,I0,A,SS,I0)'
 
 end module

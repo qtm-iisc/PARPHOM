@@ -2,9 +2,9 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
-fname = 'phbands_9.43_mos2.hdf5'
-nbands = 42*3
-no_k_pts = 31
+fname = 'phbands_21.8_tblg.hdf5'
+nbands = 28*3
+no_k_pts = 130
 index_ = [i for i in range(no_k_pts)]
 
 data = h5py.File(fname, 'r')
