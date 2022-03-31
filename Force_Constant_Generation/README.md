@@ -1,10 +1,15 @@
-Changes to the code:
+## Generation of Force constants using Finite difference method
 
+    
+###  Usage
+   
+    mpiexec -np <no. of cores> get_force_constant -i <lammps input file>   
+        
+        [ Optional arguments: -o Output file, -d Displacement of each atom]  
+    
+###  Theory  
 
-phonolammps_0.8.1
-=================
-* __init__serial.py: serial version of the code
-
-Modified the force_constants generation. Checked against lammps and phonopy most recent version.
-
-* __init_para.py: soon will be added.
+    We displace every atom by a finite distance and compute the derivative of the Forces on the atoms due to the displacement.  
+```
+        $\phi_{a,b}^{i,j} = -\frac{dF_{b,j}}{dr_{a,i}}$
+```
