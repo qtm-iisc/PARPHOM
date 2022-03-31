@@ -1,0 +1,39 @@
+# ---------------------------------------------------
+# Input file for Phonon Calculations in Moire Systems
+# ---------------------------------------------------
+
+
+lammps file location         : ./
+lammps file name             : lammps.dat_min
+natom                        : 42
+atom types                   : 6
+atom style                   : atomic
+
+
+q file location              : ./
+q file name                  : qpt_bands.dat
+nqpt                         : 130
+
+
+force constant file location : ../../../Force_Constant_Generation/rewrite_python
+force constant file name     : FORCE_CONSTANTS_MINE_WSE2
+force constant dataset       : force_constants
+
+
+num qpools                   : 3
+
+
+compute eigvecs              : yes
+range                        : A       
+min eigval                   : -2.000
+max eigval                   : 100       
+min index                    : 13
+max index                    : 16
+
+mb                           : 32
+nb                           : 32
+abstol                       : 1E-16
+orfac                        : 1E-16
+
+output file name             : phbands_21.8_tbwse2
+output_file_location         : ./
