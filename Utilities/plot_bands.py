@@ -1,14 +1,11 @@
 from pymelecutil import plot_figures
 
-label=(r'$\Gamma $','M', 'K', r'$\Gamma $', r'K$^{p}$')
-en_range = None #[-.250,.250]
+label=(r'$\Gamma $','M', 'K', r'$\Gamma $')
+en_range = [-.250,.250]
 plt = plot_figures(dpi=500,en_range=en_range)
-plt.plot_band_structure(data_file='../Examples/tbmos2_21.8/phbands_21.8_mos2_KKp.hdf5',
-                        label=label, 
-                        nbands=126, 
-                        nkpt=181, 
-                        kfile='../Examples/tbmos2_21.8/qpt_bands_KKp.dat',
-                        save=False,
-                        with_chirality=True,
-                        closed_loop=False,
-                        chiral_file='/home/mshinjan/Phonons/Phonon_ang_momentum/test_file_bands')
+plt.plot_band_structure(data_file='/home/mshinjan/Electronic_bands_data/tblg_0.95/bands_0.95_E0.hdf5',label=label,
+                        nbands=14284,nkpt=70,kfile='/home/mshinjan/Electronic_bands_data/tblg_0.95/kpt_bands.dat',
+                        save=False)
+#plt.plot_band_structure(data_file='../Examples/tblg_21.8/bands_21.8_E0.hdf5',label=label, 
+#                        nbands=28, nkpt=300, kfile='../Examples/tblg_21.8/k_points.dat',
+#                        en_range=en_range,save=False)

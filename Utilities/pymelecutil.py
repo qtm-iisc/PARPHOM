@@ -291,7 +291,7 @@ class moire_electron_utils():
                 local_triangles_reduced.append([up.index(mapping[local_triangles[i][0]]), \
                                                 up.index(mapping[local_triangles[i][1]]), \
                                                 up.index(mapping[local_triangles[i][2]])])
-                print("Rank %d appended %d/%d triangles."%(rank,i,len(local_triangles)),flush=True)
+                print("Rank %d appended %d/%d triangles."%(rank,i+1,len(local_triangles)),flush=True)
             comm.Barrier()
 
             triangles_reduced = []
@@ -343,10 +343,11 @@ class moire_electron_utils():
                               box_dim,
                               image_size=5000,
                               number_of_ticks = 5,
-                              vmin = 3.4,
+                              vmin = 3.35,
                               vmax = 3.65,
                               dpi = 300,
-                              output_file='interlayer_seperation.svg'):
+                              output_file='interlayer_seperation.pdf',
+                              transparent=True):
         """
             Computes the interlayer seperation for a given moire structure.
             
@@ -430,7 +431,8 @@ class moire_electron_utils():
         plt.imshow(ils,cmap=cmap, vmin=vmin, vmax=vmax)
 
         cbar = cm.ScalarMappable(cmap=cmap)
-        cbar.set_clim(vmin=vmin, vmax=vmax)
+        if vmin!=None and vmax!=None:
+            cbar.set_clim(vmin=vmin, vmax=vmax)
 
         xticks = np.linspace(box_dim[0,0]+1.5,box_dim[0,1]-1.5,number_of_ticks)
         for i in range(len(xticks)):
@@ -447,9 +449,9 @@ class moire_electron_utils():
         Cbar = plt.colorbar(cbar)
         Cbar.ax.tick_params(labelsize=12)
         Cbar.set_label(r'Interlayer distance ($\AA$)',size=15,rotation=270,labelpad=40)
-
+        
         plt.tight_layout()
-        plt.savefig(output_file, format='svg', dpi=dpi)
+        plt.savefig(output_file, format='pdf', dpi=dpi, transparent=transparent)
         plt.clf()
 
         return
@@ -504,7 +506,7 @@ class moire_electron_utils():
                     lines.extend([[p0,p1],[p0,p2],[p0,p3]])
                     c.extend([strain[i,0], strain[i,1], strain[i,2]])
         line_segments = LineCollection(np.array(lines), linestyles='solid',
-                                       cmap='coolwarm',lw=3.5)
+                                       cmap='coolwarm',lw=0.5)
         c = np.array(c)
         line_segments.set_array(c)
         ax[0].add_collection(line_segments)
@@ -527,7 +529,7 @@ class moire_electron_utils():
                     lines.extend([[p0,p1],[p0,p2],[p0,p3]])
                     c.extend([strain[i,0], strain[i,1], strain[i,2]])
         line_segments = LineCollection(np.array(lines), linestyles='solid',
-                                       cmap='coolwarm',lw=3.5)
+                                       cmap='coolwarm',lw=0.5)
         c = np.array(c)
         line_segments.set_array(c)
         ax[1].add_collection(line_segments)
@@ -551,10 +553,10 @@ class moire_electron_utils():
 
         for j in grid:
             if plot_limits==None:
-                j.set_xlim(-self.lat[0,0]*neighbors/2+self.lat[0,0]*0.3,
-                            self.lat[0,0]*neighbors/2+self.lat[0,0]*0.3)
-                j.set_ylim(-self.lat[1,1]*neighbors/2+self.lat[1,1]*0.3,
-                            self.lat[1,1]*neighbors/2+self.lat[1,1]*0.3)
+                j.set_xlim(-self.lat[0,0]*neighbors/2+self.lat[0,0]*0.75,
+                            self.lat[0,0]*neighbors/2+self.lat[0,0]*0.75)
+                j.set_ylim(-self.lat[1,1]*neighbors/2+self.lat[1,1]*0.75,
+                            self.lat[1,1]*neighbors/2+self.lat[1,1]*0.75)
             else:
                 j.set_xlim(-plot_limits[0],plot_limits[0])
                 j.set_ylim(-plot_limits[1],plot_limits[1])
@@ -572,9 +574,8 @@ class moire_electron_utils():
 
         if heading!=None:
             fig.suptitle(heading, size=22)
-        #plt.tight_layout()
         if save:
-            plt.savefig(output_file_name, dpi=dpi)
+            plt.savefig(output_file_name, dpi=dpi, bbox_inches='tight')
             plt.clf()
         else:
             plt.show()
@@ -607,8 +608,7 @@ class plot_figures():
         return
 
     def plot_band_structure(self, data_file, nbands, nkpt, kfile, label, 
-                            save=True,savefile='bandstruct.png', closed_loop=True,
-                            with_chirality=False, chiral_file=None):
+                            save=True,savefile='bandstruct.png', closed_loop=True):
         
         with open(kfile,'r') as f:
             for nodes in f:
@@ -621,10 +621,6 @@ class plot_figures():
             eigvals = np.empty((nkpt+1, nbands))
         else:
             eigvals = np.empty((nkpt,nbands))
-        
-        if with_chirality:
-            with h5py.File(chiral_file,'r') as f:
-                c = f['chirality'][:]
 
         counter = 0
         for group in data.keys():
@@ -636,26 +632,15 @@ class plot_figures():
             counter += 1
         x = [i for i in range(counter)]
         for i in range(nbands):
-            plt.plot(x,eigvals[:,i],c='k',alpha=0.1)
-            if with_chirality:
-                plt.scatter(x,eigvals[:,i],c=c[:,i],cmap='seismic',vmin=-1,vmax=1,s=4)
-        if with_chirality:
-            plt.colorbar()
+            plt.plot(x,eigvals[:,i],c='b')
         plt.xticks(nodes,label,fontsize=18)
-        plt.yticks(fontsize=18)
-        plt.ylabel(r'Energy (cm$^{-1}$)', size=20)
+        plt.ylabel('Energy (eV)', size=15)
         if self.en_range!=None:
             plt.ylim(self.en_range[0],self.en_range[1])
-        else:
-            plt.ylim(0,)
         for n in range(len(nodes)):
             plt.axvline(x=nodes[n],linewidth=1,color='k')
         plt.axhline(y=0,linewidth=1,color='k')
         plt.xlim(nodes[0],nodes[len(nodes)-1])
-
-            
-
-
         if save:
             plt.savefig(savefile,dpi=self.dpi)
         else:
