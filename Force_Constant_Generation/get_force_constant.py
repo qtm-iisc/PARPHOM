@@ -163,8 +163,6 @@ def get_force_constant(lammps_input_file,displacement,at_id,alpha):
     forces2 = np.array([[fp2[i][0], fp2[i][1], fp2[i][2]] for i in range(na)], dtype=float)
     # ---------
     fc = -(forces2-forces1)/displacement
-
-
     return fc
 
 
@@ -180,12 +178,13 @@ def main():
     at_id = [i for i in range(na)]
     local_atoms = distribute(at_id,rank,size)
     f = h5py.File(args.output,'w',driver='mpio',comm=MPI.COMM_WORLD)
-    dset = f.create_dataset('force_constants',((na,na,3,3)),dtype='f')
+    dset = f.create_dataset('force_constants',((na,na,3,3)),dtype='f',compression='gzip',compression_opts=9)
     cartesian_symb = ['x','y','z']
     for j in local_atoms:
         for alpha in range(3):
             fc = get_force_constant(lammps_input_file,args.displacement,j,alpha)
-            dset[j,:,alpha] = fc
+            with dset.collective:
+                dset[j,:,alpha] = np.array(fc,dtype='f')
             print("Rank %d finished displacing atom %d along %s"%(rank, j, cartesian_symb[alpha]),flush=True)
     f.close()
 
