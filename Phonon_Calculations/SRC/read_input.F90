@@ -110,16 +110,53 @@ subroutine read_input()
                         args_(2) == 'Yes' .or. args_(2) == 'True' .or. &
                         args_(2) == 'YES' .or. args_(2) == 'TRUE') then
                         pzheevx_vars%comp_evec = 'V'
+                        evec_comp = .true.
                     elseif (args_(2) == 'no' .or. args_(2) == 'false' .or. &
                             args_(2) == 'No' .or. args_(2) == 'False' .or. &
                             args_(2) == 'NO' .or. args_(2) == 'FALSE') then
                         pzheevx_vars%comp_evec = 'N'
+                        evec_comp = .false.
                     else
                         write(err_msg, '(3A)') "Could not interpret command ", &
                                                args_(2), &
                                                "\r\nEigenvectors will not be computed."
                         call error_message()
                         pzheevx_vars%comp_evec = 'N'
+                        evec_comp = .false.
+                    end if
+                case ("GROUP VELOCITY", "GROUP_VELOCITY")
+                    args_(2) = trim(adjustl(args_(2)))
+                    if (args_(2) == 'yes' .or. args_(2) == 'true' .or. &
+                        args_(2) == 'Yes' .or. args_(2) == 'True' .or. &
+                        args_(2) == 'YES' .or. args_(2) == 'TRUE') then
+                        comp_vel = .true.
+                    elseif (args_(2) == 'no' .or. args_(2) == 'false' .or. &
+                            args_(2) == 'No' .or. args_(2) == 'False' .or. &
+                            args_(2) == 'NO' .or. args_(2) == 'FALSE') then
+                        comp_vel = .false.
+                    else
+                        write(err_msg, '(3A)') "Could not interpret command ", &
+                                               args_(2), &
+                                               "\r\nVelocity will not be computed."
+                        call error_message()
+                        comp_vel = .false.
+                    end if
+                case ("VELOCITY METHOD", "VELOCITY_METHOD")
+                    args_(2) = trim(adjustl(args_(2)))
+                    if (args_(2) == 'cd' .or. args_(2) == 'CD' .or. &
+                        args_(2) == 'central_difference' .or.       &
+                        args_(2) == 'CENTRAL_DIFFERENCE') then
+                        vel_method = 'C'
+                    elseif (args_(2) == 'A' .or. args_(2) == 'a' .or. &
+                            args_(2) == 'Analytic' .or.               &
+                            args_(2) == 'analytic') then
+                        vel_method = 'A'
+                    else
+                        write(err_msg, '(3A)') "Could not interpret command ", &
+                                               args_(2), &
+                                    "\r\nVelocity will be computed using analytic derivative."
+                        call error_message()
+                        vel_method = 'A'
                     end if
                 case ("RANGE")
                     if (trim(adjustl(args_(2))) == 'A') then
@@ -145,12 +182,6 @@ subroutine read_input()
                     read(args_(2), *) pzheevx_vars%abstol
                 case ("ORFAC")
                     read(args_(2), *) pzheevx_vars%orfac 
-!                case ("NUM NEIGHBOURS", "NUM_NEIGHBOURS")
-!                    read(args_(2), *) no_neigh
-!                case ("E FIELD Z", "E_FIELD_Z")
-!                    read(args_(2), *) E_field
-!                case ("ONSITE_ENERGY", "ONSITE ENERGY")
-!                    read(args_(2), *) moire%onsite_en
                 case ("MB")
                     read(args_(2),*) pzheevx_vars%mb
                 case ("NB")
@@ -213,7 +244,11 @@ subroutine read_input()
     write(debug_str, '(A,I0)') "Number of simultaneous Q-point diagonalizations:  ", num_pools
     call debug_output(0)
 #endif
-    write(debug_str, '(2A)') "Compute Eigenvectors: ", pzheevx_vars%comp_evec
+    write(debug_str, '(A,L)') "Compute group  velocities: ", comp_vel
+    call debug_output(0)
+    write (debug_str,'(2A)') "Velocity computation method: ", vel_method
+    call debug_output(0)
+    write(debug_str, '(A,L)') "Compute Eigenvectors: ", evec_comp
     call debug_output(0)    
     write(debug_str, '(2A)') "Range of the calculation: ", trim(pzheevx_vars%range_)
     call debug_output(0)
@@ -232,14 +267,6 @@ subroutine read_input()
     call debug_output(0)
     write(debug_str, '(A,E12.4)') "Orfac : ", pzheevx_vars%orfac
     call debug_output(0)
-!    write(debug_str, '(A,I0)') "Number of neighbour cells in each direction to scan : ", &
-!                                 no_neigh
-!    call debug_output(0)
-!    write(debug_str, '(A,F0.6,A)') "Electric Field applied in the Z direction : ", &
-!                                    E_field, " meV"
-!    call debug_output(0)
-!    write(debug_str, '(A,F0.6,A)') "Onsite energy: ", moire%onsite_en, " meV"
-!    call debug_output(0)
     write(debug_str, '(2A)') "Output file name : ", trim(output_file_name)
     call debug_output(0)
     write(debug_str, '(2A)') "Output file location : ", trim(output_file_location)
@@ -290,6 +317,9 @@ subroutine default_variables()
     q_file%npt = 1
     q_file%start = 1
     q_file%finish = 1
+    evec_comp = .false.
+    comp_vel = .false.
+    vel_method = 'A'
     pzheevx_vars%comp_evec = 'N'
     pzheevx_vars%range_ = 'A'
     pzheevx_vars%il = 1
@@ -379,6 +409,9 @@ subroutine sanitize_input()
         call exit
     end if
   
+    if (comp_vel) then
+        pzheevx_vars%comp_evec='V'
+    end if
 
     write(full_file_details, '(3A)') trim(adjustl(output_file_location)), &
                                      trim(adjustl(output_file_name)),'.hdf5'

@@ -195,4 +195,61 @@ subroutine allocate_distributed_arrays()
     call debug_output(0)
 
 
+    if (comp_vel) then
+        vel%locq = numroc(3*moire%natom, pzheevx_vars%mb, grid%mypcol, csrc, grid%npcol)
+        vel%locq = max(vel%locq,1)
+        vel%lld = numroc(3*moire%natom, pzheevx_vars%nb, grid%myprow, rsrc, grid%nprow)
+        vel%lld = max(vel%lld,1)
+
+        vel%size_ = vel%locq*vel%lld
+        call descinit(vel%desca, 3*moire%natom, 3*moire%natom, pzheevx_vars%mb, &
+                      pzheevx_vars%nb, rsrc, csrc, grid%context, vel%lld, info)
+        allocate(vel%mat(vel%size_))
+        write(debug_str,'(A)') "Group Velocity Matrix Allocated"
+        call debug_output(0)
+#ifdef __DEBUG
+        write(debug_str,'(A)') "\r\nGroup Velocity Matrix Parameters: "
+        call debug_output(0)
+        call mpi_barrier(mpi_global%comm, mpierr)
+        do i=0,mpi_global%size_-1
+            if (i==mpi_global%rank) then
+                write(*,'(A,I8,3(A,I0))') "Rank: ", mpi_global%rank, &
+                                       "    |  Size: ", vel%size_, &
+                                       " Local Rows: ", vel%lld, &
+                                       " Local Cols: ", vel%locq
+            end if
+            call mpi_barrier(mpi_global%comm, mpierr)
+        end do
+        call mpi_barrier(mpi_global%comm, mpierr)
+    
+        write(debug_str, '(A)') "\r\nVelocity Matrix descriptor:"
+        call debug_output(0)
+        do i=0,mpi_global%size_-1
+            if (i==mpi_global%rank) then
+                write(*,'(A)') " ---------"
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  DTYPE_: ", vel%desca(DTYPE_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  CTXT_: ", vel%desca(CTXT_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  M_: ", vel%desca(M_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  N_: ", vel%desca(N_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  MB_: ", vel%desca(MB_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  NB_: ", vel%desca(NB_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  RSRC_: ", vel%desca(RSRC_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  CSRC_: ", vel%desca(CSRC_)
+                write(*,'(A,I8,A,I0)') "Rank: ", mpi_global%rank, &
+                                       "    |  LLD_: ", vel%desca(LLD_)
+            end if
+            call mpi_barrier(mpi_global%comm, mpierr)
+        end do
+#endif
+
+    end if
+
 end subroutine

@@ -6,7 +6,7 @@ subroutine diagonalize_and_write()
     integer :: q_loc    
 
     do q_loc = q_file%start, q_file%finish
-        call create_dynamical_matrix(q_loc)
+        call create_dynamical_matrix(q_loc,0)
         call diagonalize_dynamical_matrix()
         call write_output(q_loc)    
     end do  

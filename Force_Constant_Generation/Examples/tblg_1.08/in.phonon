@@ -1,0 +1,18 @@
+# deform by tension
+#1 general
+units           metal
+dimension       3
+atom_style      molecular
+neighbor        0.3 bin
+
+#2 structure
+boundary        p p p
+box tilt        large
+read_data       lammps_tblg_1.08
+
+#4 potentials
+pair_style      hybrid/overlay drip rebo
+
+# SW for layer 1
+pair_coeff   * *  drip C.drip   C
+pair_coeff   * *  rebo CH.rebo  C

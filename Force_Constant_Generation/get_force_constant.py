@@ -39,7 +39,11 @@ def parseOptions(comm):
                         nargs=argparse.OPTIONAL,
                         default='FORCE_CONSTANTS')
     parser.add_argument("-d","--displacement",help="Displacement of each atom",
-                        nargs=argparse.OPTIONAL,default=0.01,type=float)
+                        nargs=argparse.OPTIONAL,default=0.0001,type=float)
+    parser.add_argument("-c","--compression",help="Compress output file",
+                        nargs=argparse.OPTIONAL,default=False,type=bool)
+    parser.add_argument("-s","--symmetrize",help="Symmetrize the Force constant",
+                        nargs=argparse.OPTIONAL,default=False,type=bool)
     args = None
     try:
         if comm.Get_rank() == 0:
@@ -133,14 +137,14 @@ def get_force_constant(lammps_input_file,displacement,at_id,alpha):
     na = lmp.get_natoms()
    
     fp = lmp.extract_atom("f",3)
-    forces = np.array([[fp[i][0], fp[i][1], fp[i][2]] for i in range(na)], dtype=float)
+    forces = np.array([[fp[i][0], fp[i][1], fp[i][2]] for i in range(na)], dtype=np.float64)
     
     xp = lmp.extract_atom("x", 3)
-    reference = np.array([[xp[i][0], xp[i][1], xp[i][2]] for i in range(na)], dtype=float)
+    reference = np.array([[xp[i][0], xp[i][1], xp[i][2]] for i in range(na)], dtype=np.float64)
 
     reference[at_id,alpha] -= displacement/2
     id_ = lmp.extract_atom("id", 0)
-    id_ = np.array([id_[i]-1 for i in range(na)], dtype=int)
+    id_ = np.array([id_[i]-1 for i in range(na)], dtype=np.int64)
     for i in range(na):
         lmp.command('set atom {} x {} y {} z {}'.format(id_[i]+1,
                                                         reference[i,0],
@@ -148,11 +152,11 @@ def get_force_constant(lammps_input_file,displacement,at_id,alpha):
                                                         reference[i,2]))
     lmp.command('run 0')
     fp1 = lmp.extract_atom("f",3)
-    forces1 = np.array([[fp1[i][0], fp1[i][1], fp1[i][2]] for i in range(na)], dtype=float)
+    forces1 = np.array([[fp1[i][0], fp1[i][1], fp1[i][2]] for i in range(na)], dtype=np.float64)
     # ---------
     reference[at_id,alpha] += displacement
     id_ = lmp.extract_atom("id", 0)
-    id_ = np.array([id_[i]-1 for i in range(na)], dtype=int)
+    id_ = np.array([id_[i]-1 for i in range(na)], dtype=np.int64)
     for i in range(na):
         lmp.command('set atom {} x {} y {} z {}'.format(id_[i]+1,
                                                         reference[i,0],
@@ -160,12 +164,48 @@ def get_force_constant(lammps_input_file,displacement,at_id,alpha):
                                                         reference[i,2]))
     lmp.command('run 0')    
     fp2 = lmp.extract_atom("f",3)
-    forces2 = np.array([[fp2[i][0], fp2[i][1], fp2[i][2]] for i in range(na)], dtype=float)
+    forces2 = np.array([[fp2[i][0], fp2[i][1], fp2[i][2]] for i in range(na)], dtype=np.float64)
     # ---------
     fc = -(forces2-forces1)/displacement
     return fc
 
 
+def symmetrize_fc(fc_file,comm,local_atoms,natom,no_of_iterations):
+    """
+        Impose symmetries
+    """
+    f = h5py.File(fc_file,'r+',driver='mpio',comm=comm)
+    data = f['force_constants']
+
+    for i in range(no_of_iterations):
+        acoustic_sum_rule(data,local_atoms)
+        inversion_symmetry(data,local_atoms,natom)
+    f.close()
+    return
+
+def acoustic_sum_rule(data,local_atoms):
+    """
+        Impose acoustic sum rule
+    """
+    for i in local_atoms:
+        for alpha in range(3):
+            for beta in range(3):
+                data[i,:,alpha,beta] -= np.mean(data[i,:,alpha,beta])
+    return
+
+
+def inversion_symmetry(data,local_atoms,natom):
+    """
+        Impose inversion symmetry
+    """
+    for i in local_atoms:
+        for j in range(i+1,natom):
+            for alpha in range(3):
+                for beta in range(3):
+                    mean = (data[i,j,alpha,beta] + data[j,i,beta,alpha])/2
+                    data[i,j,alpha,beta] = mean
+                    data[j,i,beta,alpha] = mean
+    return
 
 def main():
     comm = MPI.COMM_WORLD
@@ -177,16 +217,29 @@ def main():
     na, lat, type_mass, at_types, asses, positions = get_structure_from_lammps(lammps_input_file)
     at_id = [i for i in range(na)]
     local_atoms = distribute(at_id,rank,size)
-    f = h5py.File(args.output,'w',driver='mpio',comm=MPI.COMM_WORLD)
-    dset = f.create_dataset('force_constants',((na,na,3,3)),dtype='f',compression='gzip',compression_opts=9)
+    f = h5py.File(args.output,'w',driver='mpio',comm=comm)
+    if args.compression:
+        dset = f.create_dataset('force_constants',((na,na,3,3)),dtype='f',compression='gzip',compression_opts=9)
+    else:
+        dset = f.create_dataset('force_constants',((na,na,3,3)),dtype='f')
+
     cartesian_symb = ['x','y','z']
     for j in local_atoms:
-        for alpha in range(3):
-            fc = get_force_constant(lammps_input_file,args.displacement,j,alpha)
-            with dset.collective:
-                dset[j,:,alpha] = np.array(fc,dtype='f')
-            print("Rank %d finished displacing atom %d along %s"%(rank, j, cartesian_symb[alpha]),flush=True)
+        for beta in range(3):
+            fc = get_force_constant(lammps_input_file,args.displacement,j,beta)
+            if args.compression:
+                with dset.collective:
+                    dset[j,:,beta] = np.array(fc,dtype='f')
+            else:
+                dset[j,:,beta] = np.array(fc,dtype='f')
+            print("Rank %d finished displacing atom %d/%d along %s"%(rank, j, local_atoms[len(local_atoms)-1], cartesian_symb[beta]),flush=True)
     f.close()
+    if rank==0: 
+        print("Force constant generated and written", flush=True)
+    comm.Barrier()
+    if args.symmetrize:
+        symmetrize_fc(args.output,comm,local_atoms,na,20)
+    return
 
 if __name__ == '__main__':
     main()

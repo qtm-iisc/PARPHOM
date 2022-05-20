@@ -24,16 +24,20 @@ num qpools                   : 3
 
 
 compute eigvecs              : yes
+
 range                        : A       
 min eigval                   : -2.000
 max eigval                   : 100       
 min index                    : 13
 max index                    : 16
 
+group velocity               : yes
+velocity method              : a
+
 mb                           : 32
 nb                           : 32
 abstol                       : 1E-16
 orfac                        : 1E-16
 
-output file name             : phbands_21.8_tblg
+output file name             : phbands_21.8_tblg_a
 output_file_location         : ./

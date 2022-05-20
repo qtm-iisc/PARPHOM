@@ -1,16 +1,37 @@
-subroutine create_dynamical_matrix(q_indx)
+subroutine create_dynamical_matrix(q_indx, derivative)
 
     use mpi
     use global_variables
 
     implicit none
-    integer, intent(in) :: q_indx
+    integer, intent(in) :: derivative, q_indx
+    double precision, dimension(3) :: delta, delta_crys, q_shifted
     integer :: ia_first, ja_first, iastart, jastart, iaend, jaend , rsrc, csrc
     integer :: lroffset, lcoffset, ia, ja, lrindx, lcindx, ipos
+    double complex :: dij, dijplus, dijminus
+    double precision, parameter :: DEL_INCREMENT = 1e-5
+
 #ifdef __DEBUG
     integer :: i,j
     character(len=50) :: format_
 #endif
+
+
+    ! -------------------------------------------------------------------------------
+    ! Subroutine that creates the dynamical matrix in a block cyclically distributed 
+    ! manner across the processors. The variable derivative is passed to compute the
+    ! derivative of the dynamical matrix
+    !
+    !           derivative = 0 :: no derivative is computed
+    !           derivative = 1 :: dD/dkx is computed
+    !           derivative = 2 :: dD/dky is computed
+    !           derivative = 3 :: dD/dkz is computed
+    !   
+    !     Central finite difference is used for computing the derivatives.
+    !     The delta is taken as (0.000001 1/Ang) in the reciprocal lattice,
+    !     in each direction.
+    !
+    ! -------------------------------------------------------------------------------
 
 
     rsrc = 0
@@ -46,7 +67,25 @@ subroutine create_dynamical_matrix(q_indx)
                     lrindx = lroffset + (ia-iastart)
                     lcindx = lcoffset + (ja-jastart)
                     ipos = lrindx + (lcindx-1)*dyn_mat%desca(LLD_)
-                    call create_dynamical_ij(ipos, q_indx, ia, ja)
+                    if (derivative.ne.0) then
+                        if (vel_method=='A') then
+                            call analytical_derivative_dynamical_ij(ipos, q_indx, &
+                                                                    ia, ja, derivative)
+                        else 
+                            delta=0.0
+                            delta(derivative) = DEL_INCREMENT
+                            call linsolve(delta, moire%rec_lat, delta_crys)
+                            q_shifted = q_file%points(q_indx,:) + delta_crys/2
+                            call create_dynamical_ij(ipos, q_shifted, ia, ja, dijplus)
+                            q_shifted = q_file%points(q_indx,:) - delta_crys/2
+                            call create_dynamical_ij(ipos, q_shifted, ia, ja, dijminus)
+                            dij = (dijplus-dijminus)/(norm2(delta))    
+                            dyn_mat%mat(ipos) = dij
+                        end if
+                    else
+                        call create_dynamical_ij(ipos,q_file%points(q_indx,:),ia,ja,dij)
+                        dyn_mat%mat(ipos) = dij
+                    end if
                 end do
             end do
         end do
@@ -76,18 +115,80 @@ subroutine create_dynamical_matrix(q_indx)
     call date_time_message_local(trim(debug_str))
 #else
     call mpi_barrier(mpi_global%comm, mpierr)
-
-    write(debug_str,'(A,I0,A)') "Dynamical Matrix created for q-pt no. ", q_indx, " on "
-    call date_time_message(trim(debug_str))
+    if (derivative==0) then
+        write(debug_str,'(A,I0,A)') "Dynamical Matrix created for q-pt no. ", q_indx, " on "
+        call date_time_message(trim(debug_str))
+    end if
 #endif
 
 end subroutine
 
 
-subroutine create_dynamical_ij(ipos, q_indx, inp_ia, inp_ja)
+subroutine create_dynamical_ij(ipos, q_point, inp_ia, inp_ja, dij)
   use global_variables
   implicit none
-  integer, intent(in) :: ipos, q_indx, inp_ia, inp_ja
+  integer, intent(in) :: ipos, inp_ia, inp_ja
+  double precision, dimension(3) :: q_point
+  double complex, intent(out) :: dij
+  double precision, parameter :: PI  = 3.141592653589793
+  double precision, parameter :: tol = 0.0000001
+  double complex, parameter   :: IM  = (0,1)
+  double precision, dimension(3) :: rj_sup
+  integer :: l,i,j, ix, multiplicity, ia, ja
+  double precision :: dist, minimum, prephase
+  double precision, dimension(9) :: neigh
+  integer, allocatable, dimension(:) :: b
+  double complex :: phase
+
+  ia = int((inp_ia+2)/3)
+  ja = int((inp_ja+2)/3)
+  do l= -1,9
+    i = (l-1)/3 - 1
+    j = l - 2 - 3*(i+1)
+    rj_sup(1) = moire%crys(ja,1) + i
+    rj_sup(2) = moire%crys(ja,2) + j
+    rj_sup(3) = moire%crys(ja,3)
+    rj_sup = matmul(transpose(moire%lat),rj_sup)
+    dist = sqrt((moire%real_pos(ia,1)-rj_sup(1))**2 + &
+                (moire%real_pos(ia,2)-rj_sup(2))**2 + &
+                (moire%real_pos(ia,3)-rj_sup(3))**2)
+    neigh(l) = dist
+  end do
+
+  minimum = minval(neigh)
+  b = pack([(ix, ix=1,size(neigh))], neigh<minimum+tol)
+
+  phase = cmplx(0,0)
+  multiplicity = 0
+  do l=1,size(b)
+    i = (b(l)-1)/3 - 1
+    j = b(l)-2-3*(i+1)
+    rj_sup(1) = moire%crys(ja,1) + i - moire%crys(ia,1)
+    rj_sup(2) = moire%crys(ja,2) + j - moire%crys(ia,2)
+    rj_sup(3) = moire%crys(ja,3) - moire%crys(ia,3)
+    !prephase = dot_product(q_file%points(q_indx,:),rj_sup)
+    prephase = dot_product(q_point,rj_sup)
+    phase = phase + exp(-2*PI*IM*prephase)
+    multiplicity = multiplicity + 1
+  end do
+
+  !dyn_mat%mat(ipos) = force_const%mat(ipos)*phase/multiplicity
+  !dyn_mat%mat(ipos) = dyn_mat%mat(ipos)/sqrt(moire%mass(moire%at_types_i(ia))*&
+  !                                           moire%mass(moire%at_types_i(ja)))
+  dij = force_const%mat(ipos)*phase/multiplicity
+  dij = dij/sqrt(moire%mass(moire%at_types_i(ia))*moire%mass(moire%at_types_i(ja)))
+
+  return
+
+end subroutine
+
+
+subroutine analytical_derivative_dynamical_ij(ipos, q_indx, inp_ia, inp_ja, derivative)
+    !, dij)
+  use global_variables
+  implicit none
+  integer, intent(in) :: ipos, inp_ia, inp_ja, q_indx, derivative
+  !double complex, intent(out) :: dij
   double precision, parameter :: PI  = 3.141592653589793
   double precision, parameter :: tol = 0.0000001
   double complex, parameter   :: IM  = (0,1)
@@ -125,14 +226,26 @@ subroutine create_dynamical_ij(ipos, q_indx, inp_ia, inp_ja)
     rj_sup(2) = moire%crys(ja,2) + j - moire%crys(ia,2)
     rj_sup(3) = moire%crys(ja,3) - moire%crys(ia,3)
     prephase = dot_product(q_file%points(q_indx,:),rj_sup)
-    phase = phase + exp(-2*PI*IM*prephase)
+    !prephase = dot_product(q_point,rj_sup)
+    rj_sup = matmul(transpose(moire%lat),rj_sup)
+    phase = phase - exp(-2*PI*IM*prephase)*IM*rj_sup(derivative)
     multiplicity = multiplicity + 1
   end do
 
   dyn_mat%mat(ipos) = force_const%mat(ipos)*phase/multiplicity
   dyn_mat%mat(ipos) = dyn_mat%mat(ipos)/sqrt(moire%mass(moire%at_types_i(ia))*&
                                              moire%mass(moire%at_types_i(ja)))
+  !dij = force_const%mat(ipos)*phase/multiplicity
+  !dij = dij/sqrt(moire%mass(moire%at_types_i(ia))*moire%mass(moire%at_types_i(ja)))
 
   return
 
 end subroutine
+
+
+
+
+
+
+
+

@@ -72,7 +72,8 @@ subroutine diagonalize_dynamical_matrix()
     end if
 
 
-    eval = sqrt(abs(eval))*15.633302*33.35641*sign(1.00,eval)
+    !eval = sqrt(abs(eval))*15.633302*33.35641*sign(1.00,eval)
+    eval = sqrt(abs(eval))*sign(1.00,eval)
 
 #ifdef __DEBUG    
 #ifdef __KPOOL

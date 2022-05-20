@@ -60,7 +60,9 @@ module global_variables
     type(bz_points) :: q_file
     type(system) :: moire
     type(fc) :: force_const
-    type(comparr) :: dyn_mat, evec
+    type(comparr) :: dyn_mat, evec, vel
+    logical :: evec_comp, comp_vel
+    character(len=1) :: vel_method
     double precision, allocatable, dimension(:) :: eval
     type(scalapack_variables) :: pzheevx_vars
     integer , parameter :: BLOCK_CYCLIC_2D = 1, DLEN_ = 9, DTYPE_ = 1,     &
@@ -85,9 +87,9 @@ module global_variables
     integer  :: num_pools
 #endif
 
-    character(500) :: output_file_name, output_file_location
+    character(len=char_len) :: output_file_name, output_file_location
 
     integer , dimension(8) :: date_time
-    character(len=500), parameter :: date_format = '(A,X,2(I0,A),I4,3(A,I2.2),A,SP,I0,A,SS,I0)'
+    character(len=char_len), parameter :: date_format = '(A,X,2(I0,A),I4,3(A,I2.2),A,SP,I0,A,SS,I0)'
 
 end module
