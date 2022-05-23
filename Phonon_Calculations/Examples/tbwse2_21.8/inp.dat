@@ -3,8 +3,8 @@
 # ---------------------------------------------------
 
 
-lammps file location         : ./
-lammps file name             : lammps.dat_min
+lammps file location         : ../../../Force_Constant_Generation/Examples/tbwse2_21.8/
+lammps file name             : lammps.dat_final
 natom                        : 42
 atom types                   : 6
 atom style                   : atomic
@@ -15,8 +15,9 @@ q file name                  : qpt_bands.dat
 nqpt                         : 130
 
 
-force constant file location : ../../../Force_Constant_Generation/rewrite_python
-force constant file name     : FORCE_CONSTANTS_MINE_WSE2
+#force constant file location : ../../../Force_Constant_Generation/Examples/tbwse2_21.8/
+force constant file location : /home/mshinjan/Twister/examples/Homobilayer_hex/WSe2/Angle_21.78 
+force constant file name     : FORCE_CONSTANTS
 force constant dataset       : force_constants
 
 
@@ -30,10 +31,13 @@ max eigval                   : 100
 min index                    : 13
 max index                    : 16
 
-mb                           : 32
-nb                           : 32
-abstol                       : 1E-16
-orfac                        : 1E-16
+group velocity               : yes
+velocity_method              : analytic
+
+mb                           : 4
+nb                           : 4
+abstol                       : 1E-15
+orfac                        : 1E-15
 
 output file name             : phbands_21.8_tbwse2
 output_file_location         : ./

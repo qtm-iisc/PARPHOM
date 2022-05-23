@@ -30,7 +30,8 @@ subroutine diagonalize_dynamical_matrix()
 
 
     call pzheevx(pzheevx_vars%comp_evec, pzheevx_vars%range_, 'U', 3*moire%natom,  &
-    dyn_mat%mat, ia, ja, dyn_mat%desca, pzheevx_vars%vl,pzheevx_vars%vu, &
+    dyn_mat%mat, ia, ja, dyn_mat%desca, &
+    pzheevx_vars%vl/(15.633302*33.35641), pzheevx_vars%vu/(15.633302*33.35641), &
     pzheevx_vars%il, pzheevx_vars%iu, pzheevx_vars%abstol, pzheevx_vars%comp_num_eval, &
     pzheevx_vars%comp_num_evec, eval, pzheevx_vars%orfac, evec%mat, 1, 1, evec%desca, work, &
     lwork, rwork, lrwork, iwork, liwork, ifail, iclustr, gap, info)
@@ -48,7 +49,8 @@ subroutine diagonalize_dynamical_matrix()
     allocate(iwork(liwork))
   
     call pzheevx(pzheevx_vars%comp_evec, pzheevx_vars%range_, 'U', 3*moire%natom,   &
-    dyn_mat%mat, ia, ja, dyn_mat%desca, pzheevx_vars%vl, pzheevx_vars%vu, &
+    dyn_mat%mat, ia, ja, dyn_mat%desca, &
+    pzheevx_vars%vl/(15.633302*33.35641), pzheevx_vars%vu/(15.633302*33.35641), &
     pzheevx_vars%il, pzheevx_vars%iu, pzheevx_vars%abstol, pzheevx_vars%comp_num_eval, &
     pzheevx_vars%comp_num_evec,eval, pzheevx_vars%orfac, evec%mat, 1, 1, evec%desca, work, &
     lwork, rwork, lrwork, iwork, liwork, ifail, iclustr, gap, info)

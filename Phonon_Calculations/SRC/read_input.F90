@@ -376,11 +376,11 @@ subroutine sanitize_input()
     
 
     if (pzheevx_vars%mb == -1) then
-        pzheevx_vars%mb = min(32,moire%natom)
+        pzheevx_vars%mb = min(32,moire%natom)/mpi_global%size_ + 1
     end if
 
     if (pzheevx_vars%nb == -1) then
-        pzheevx_vars%nb = min(32,moire%natom)
+        pzheevx_vars%nb = min(32,moire%natom)/mpi_global%size_ + 1
     end if
 
     select case (pzheevx_vars%range_)

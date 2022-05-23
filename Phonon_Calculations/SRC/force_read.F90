@@ -48,7 +48,21 @@ subroutine read_force_constants()
 
     call h5open_f(hdf5_error)
     call h5fopen_f(trim(adjustl(file_name_)),H5F_ACC_RDONLY_F, file_id, hdf5_error)
+    if (hdf5_error.ne.0) then
+        write(debug_str,'(2A)') "HDF5 could not open the Force constant file", &
+                                trim(adjustl(file_name_))
+        call debug_output(hdf5_error)
+        call exit
+    end if
     call h5dopen_f(file_id, trim(adjustl(force_const%dset_name)), dset_id, hdf5_error)
+    if (hdf5_error.ne.0) then
+        write(debug_str,'(4A)') "HDF5 could not open dataset",        &
+                                trim(adjustl(force_const%dset_name)), & 
+                                "in the Force constant file", &
+                                trim(adjustl(file_name_))
+        call debug_output(hdf5_error)
+        call exit
+    end if
     call h5dget_space_f(dset_id, dataspace, hdf5_error)
 
     data_dims(1) = force_const%size_
@@ -107,18 +121,18 @@ subroutine read_force_constants()
     call h5close_f(hdf5_error)
 
 #ifdef __DEBUG
-    write(debug_str,'(A)') "The local force constant elements in each rank are: "
-    call debug_output(0)
-    do i=1,mpi_global%size_
-        write(format_, '(A,I0,A)') '(A,I0,A,',force_const%size_,'F12.6)'
-        if (mpi_global%rank==i-1) then
-            write(*,format_) "Rank :", mpi_global%rank, &
-                             "\r\nForce Constant : \r\n", (force_const%mat(j), &
-                             j=1,force_const%size_)
-        end if
-        call mpi_barrier(mpi_global%comm, mpierr)
-    end do
-    call mpi_barrier(mpi_global%comm, mpierr)
+!    write(debug_str,'(A)') "The local force constant elements in each rank are: "
+!    call debug_output(0)
+!    do i=1,mpi_global%size_
+!        write(format_, '(A,I0,A)') '(A,I0,A,',force_const%size_,'F12.6)'
+!        if (mpi_global%rank==i-1) then
+!            write(*,format_) "Rank :", mpi_global%rank, &
+!                             "\r\nForce Constant : \r\n", (force_const%mat(j), &
+!                             j=1,force_const%size_)
+!        end if
+!        call mpi_barrier(mpi_global%comm, mpierr)
+!    end do
+!    call mpi_barrier(mpi_global%comm, mpierr)
 
 #endif
 

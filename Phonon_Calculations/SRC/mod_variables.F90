@@ -34,8 +34,8 @@ module global_variables
     type system
         integer  :: natom
         double precision, allocatable, dimension(:) :: mass
-        double precision, allocatable, dimension(:,:) :: real_pos, crys, normal
-        integer , allocatable, dimension(:) :: at_types_i
+        double precision, allocatable, dimension(:,:) :: real_pos, crys, sup_cell_info
+        integer , allocatable, dimension(:) :: at_types_i, lay_types
         double precision, dimension(3,3) :: lat , rec_lat
     end type system
 

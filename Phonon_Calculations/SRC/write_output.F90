@@ -16,9 +16,9 @@ subroutine write_output(q_indx)
     integer(4) :: hdf5_error
     integer(hid_t) :: plist_id, glist_id, dlist_id
     integer(hid_t) :: file_id
-    integer(hid_t) :: dset_id, dset_id2
+    integer(hid_t) :: dset_id !, dset_id2
     integer(hid_t) :: group_id
-    integer(hid_t) :: filespace, memspace, dataspace_id, dataspace_id2
+    integer(hid_t) :: filespace, memspace, dataspace_id !, dataspace_id2
     integer(hsize_t), dimension(1) :: dim_eval, dim_q, dim_mem
     integer(hsize_t), dimension(2) :: dim_evec
     integer(hsize_t), dimension(2) :: dim_vel
@@ -30,9 +30,12 @@ subroutine write_output(q_indx)
     integer(hsize_t), dimension(3,1) :: coord_vel
     integer(size_t), parameter :: ONE_ = 1
 
+    integer(size_t) :: type_size, type_size_r, type_size_i, offset
+    integer(hid_t) :: dtr_id, dti_id, dtype_id
+
     integer :: proc_should_write, i
 
-    integer(4) :: comm_
+    integer :: write_comm
    
     integer, external :: numroc
 
@@ -41,6 +44,7 @@ subroutine write_output(q_indx)
     double complex, parameter :: alpha = cmplx(1,0)
     double complex, parameter :: beta = cmplx(0,0)
 
+    
     ! open hdf5 interface
     ! -------------------
 
@@ -82,10 +86,8 @@ subroutine write_output(q_indx)
     end if
 
     
-    comm_ = mpi_global%comm
-
     call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, hdf5_error)
-    call h5pset_fapl_mpio_f(plist_id, comm_ , MPI_INFO_NULL, hdf5_error)
+    call h5pset_fapl_mpio_f(plist_id, int(mpi_global%comm,kind=4) , MPI_INFO_NULL, hdf5_error)
     call h5fopen_f(trim(adjustl(file_name)), H5F_ACC_RDWR_F, file_id, hdf5_error, &
                    access_prp = plist_id)    
 
@@ -111,8 +113,14 @@ subroutine write_output(q_indx)
     call h5dclose_f(dset_id, hdf5_error)
     call h5pclose_f(dlist_id, hdf5_error)
 
+    call h5gclose_f(group_id,hdf5_error)
+    call h5pclose_f(glist_id, hdf5_error)
+    call h5pclose_f(plist_id, hdf5_error)
+    call h5fclose_f(file_id, hdf5_error)
+    
     write(done_line,"(I0,3A)") pzheevx_vars%comp_num_eval, " eigenvalues written to ", &
                               trim(adjustl(file_name)), " on "
+    
     call date_time_message(trim(done_line))
 
     ! --------------------------
@@ -129,6 +137,7 @@ subroutine write_output(q_indx)
 
 
     !if (pzheevx_vars%comp_evec=='V') then
+    
     if (evec_comp) then
 
         rsrc = 0
@@ -156,16 +165,50 @@ subroutine write_output(q_indx)
             proc_should_write = 1
         end if
         
-        call h5screate_simple_f(2, dim_evec, dataspace_id, hdf5_error)
-        call h5dcreate_f(group_id,'evec_real',H5T_IEEE_F64LE,dataspace_id,dset_id,hdf5_error)
-        call h5screate_simple_f(2, dim_evec, dataspace_id2, hdf5_error)
-        call h5dcreate_f(group_id,'evec_imag',H5T_IEEE_F64LE,dataspace_id2,dset_id2,hdf5_error)
+        call mpi_comm_split(mpi_global%comm, proc_should_write, mpi_global%rank, &
+                            write_comm, mpierr)
+
 
         if (proc_should_write==1) then
-            call h5pcreate_f(H5P_DATASET_XFER_F, dlist_id, hdf5_error)
-            call h5pset_dxpl_mpio_f(dlist_id, H5FD_MPIO_INDEPENDENT_F, hdf5_error)
+
+            ! Open file in parallel
+            
+            call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, hdf5_error)
+            call h5pset_fapl_mpio_f(plist_id, int(write_comm,kind=4) , MPI_INFO_NULL, &
+                                    hdf5_error)
+            call h5fopen_f(trim(adjustl(file_name)), H5F_ACC_RDWR_F, file_id, hdf5_error, &
+                   access_prp = plist_id)
+
+            ! Open group in parallel
+              
+            call h5pcreate_f(H5P_GROUP_ACCESS_F, glist_id, hdf5_error)
+            call h5pset_all_coll_metadata_ops_f(glist_id, .true. , hdf5_error)
+            call h5gopen_f(file_id, group_name, group_id, hdf5_error, gapl_id = glist_id)
+
+            ! Create compoud datatype for storing complex values
+
+            call h5tget_size_f(H5T_IEEE_F64LE, type_size_r, hdf5_error)
+            call h5tget_size_f(H5T_IEEE_F64LE, type_size_i, hdf5_error)
+            type_size = type_size_r+type_size_i
+
+            call h5tcreate_f(H5T_COMPOUND_F, type_size, dtype_id, hdf5_error)
+            offset = 0
+            call h5tinsert_f(dtype_id, 'r', offset, H5T_IEEE_F64LE, hdf5_error)
+            offset = offset+type_size_r
+            call h5tinsert_f(dtype_id, 'i', offset, H5T_IEEE_F64LE, hdf5_error)
+
+            ! Create dataspace
 
             dim_mem(1) = evec%size_
+            
+            call h5screate_simple_f(2, dim_evec, dataspace_id, hdf5_error)
+            
+            ! Create dataset
+
+            call h5dcreate_f(group_id,'evec', dtype_id,dataspace_id,dset_id,hdf5_error)
+            call h5pcreate_f(H5P_DATASET_XFER_F, dlist_id, hdf5_error)
+            call h5pset_dxpl_mpio_f(dlist_id, H5FD_MPIO_COLLECTIVE_F, hdf5_error)
+
             call h5screate_simple_f(1, dim_mem, memspace, hdf5_error)
             
             do jastart = ja_first, pzheevx_vars%comp_num_evec, grid%npcol*evec%desca(NB_)
@@ -191,35 +234,47 @@ subroutine write_output(q_indx)
                                     ONE_, ipos, hdf5_error) 
                              call h5sselect_elements_f(dataspace_id,H5S_SELECT_APPEND_F,2,&
                                     ONE_, coord, hdf5_error)  
-                             call h5sselect_elements_f(dataspace_id2,H5S_SELECT_APPEND_F,2, &
-                                    ONE_, coord, hdf5_error)
                             end if
                         end do
                     end do
                 end do
             end do
             
+            call h5tcreate_f(H5T_COMPOUND_F, type_size_r, dtr_id, hdf5_error)
+            offset = 0
+            call h5tinsert_f(dtr_id, 'r', offset, H5T_IEEE_F64LE, hdf5_error)
+            call h5tcreate_f(H5T_COMPOUND_F, type_size_i, dti_id, hdf5_error)
+            offset = 0
+            call h5tinsert_f(dti_id, 'i', offset, H5T_IEEE_F64LE, hdf5_error) 
+            
             allocate(temp(evec%size_))
             temp = real(evec%mat)
-            call h5dwrite_f(dset_id, H5T_IEEE_F64LE, temp, &
+            !call h5dwrite_f(dset_id, H5T_IEEE_F64LE, temp, &
+            !                dim_evec, hdf5_error, mem_space_id = &
+            !                memspace, file_space_id = dataspace_id, xfer_prp=dlist_id) 
+            call h5dwrite_f(dset_id, dtr_id, temp, &
                             dim_evec, hdf5_error, mem_space_id = &
                             memspace, file_space_id = dataspace_id, xfer_prp=dlist_id) 
             temp = aimag(evec%mat)
-            call h5dwrite_f(dset_id2, H5T_IEEE_F64LE, temp, &
+            call h5dwrite_f(dset_id, dti_id, temp, &
                             dim_evec, hdf5_error, mem_space_id = &
-                            memspace, file_space_id = dataspace_id2, xfer_prp=dlist_id)  
+                            memspace, file_space_id = dataspace_id, xfer_prp=dlist_id)  
             deallocate(temp)
             call h5pclose_f(dlist_id, hdf5_error)
             call h5sclose_f(memspace,hdf5_error)
+            call h5dclose_f(dset_id, hdf5_error)
+            call h5sclose_f(dataspace_id, hdf5_error)
+            call h5gclose_f(group_id,hdf5_error)
+            call h5pclose_f(glist_id, hdf5_error)
+            call h5pclose_f(plist_id, hdf5_error)
+            call h5fclose_f(file_id, hdf5_error)
         end if
-        call h5dclose_f(dset_id, hdf5_error)
-        call h5sclose_f(dataspace_id, hdf5_error)
-        call h5dclose_f(dset_id2, hdf5_error)
-        call h5sclose_f(dataspace_id2, hdf5_error)
+        call mpi_comm_free(write_comm, mpierr)
         write(done_line,"(I0,3A)") pzheevx_vars%comp_num_evec, " eigenvectors written to ", &
                                       trim(adjustl(file_name)), " on "
         call date_time_message(trim(done_line))
     end if
+    
 
 
     ! ------------------------------------------------------------------------------
@@ -236,7 +291,7 @@ subroutine write_output(q_indx)
     !   This generates a distributed velocity matrix of which (num_evec,num_evec)
     !   elements are populated.
     !
-    !   In the output file, the velocities are the diagonal elements of this matrix.
+    !   The velocities of the different bands are the diagonal elements of this matrix.
     !
     ! --------------------------------------------------------------------------------
 
@@ -245,8 +300,6 @@ subroutine write_output(q_indx)
         rsrc = 0
         csrc = 0
 
-        dim_vel(2) = pzheevx_vars%comp_num_evec
-        dim_vel(1) = 3
 
         if (grid%myprow.ge.vel%desca(RSRC_)) then
             ia_first = (grid%myprow - vel%desca(RSRC_))*vel%desca(MB_)+1
@@ -263,12 +316,8 @@ subroutine write_output(q_indx)
 
         proc_should_write = 0
 
-        !if (ja_first.le.pzheevx_vars%comp_num_evec) then
-        !    proc_should_write = 1
-        !end if
-
-        do jastart = ja_first, dyn_mat%desca(N_), grid%npcol*dyn_mat%desca(NB_)
-            do iastart = ia_first, dyn_mat%desca(M_), grid%nprow*dyn_mat%desca(MB_)
+        do jastart = ja_first, pzheevx_vars%comp_num_evec, grid%npcol*vel%desca(NB_)
+            do iastart = ia_first, pzheevx_vars%comp_num_evec, grid%nprow*vel%desca(MB_)
                 iaend = min(dyn_mat%desca(M_), iastart+dyn_mat%desca(MB_)-1)
                 jaend = min(dyn_mat%desca(N_), jastart+dyn_mat%desca(NB_)-1)
                 do ja=jastart,jaend
@@ -281,11 +330,51 @@ subroutine write_output(q_indx)
             end do
         end do
 
+        ! Splitting the processes into groups which write and do not write
 
-        call h5screate_simple_f(2, dim_vel, dataspace_id, hdf5_error)
-        call h5dcreate_f(group_id,'vel',H5T_IEEE_F64LE,dataspace_id,dset_id,hdf5_error)
+
+        call mpi_comm_split(mpi_global%comm, proc_should_write, mpi_global%rank, &
+                            write_comm, mpierr)
+        
+        
+                        
+        if (proc_should_write==1) then
+
+            ! Create dataset in the group that will write to the file
+
+            ! Open file in parallel
+            
+            call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, hdf5_error)
+            call h5pset_fapl_mpio_f(plist_id, int(write_comm,kind=4) , MPI_INFO_NULL, &
+                                 hdf5_error)
+            call h5fopen_f(trim(adjustl(file_name)), H5F_ACC_RDWR_F, file_id, hdf5_error, &
+                 access_prp = plist_id)
+
+            ! Open group in parallel
+
+            call h5pcreate_f(H5P_GROUP_ACCESS_F, glist_id, hdf5_error)
+            call h5pset_all_coll_metadata_ops_f(glist_id, .true. , hdf5_error)
+            call h5gopen_f(file_id, group_name, group_id, hdf5_error, gapl_id = glist_id)
+
+            ! Create dataset
+
+            dim_vel(2) = pzheevx_vars%comp_num_evec
+            dim_vel(1) = 3
+            
+            call h5screate_simple_f(2, dim_vel, dataspace_id, hdf5_error)
+            call h5dcreate_f(group_id,'vel',H5T_IEEE_F64LE,dataspace_id,dset_id,hdf5_error)
+            call h5pcreate_f(H5P_DATASET_XFER_F, dlist_id, hdf5_error)
+            call h5pset_dxpl_mpio_f(dlist_id, H5FD_MPIO_COLLECTIVE_F, hdf5_error)
+            dim_mem(1) = vel%size_
+            call h5screate_simple_f(1, dim_mem, memspace, hdf5_error)
+        end if
+
+
         
         do i=1,3
+          
+          ! Compute the velocity for each cartesian direction
+
           call create_dynamical_matrix(q_indx,i)
           call pzgemm('N','N',3*moire%natom, 3*moire%natom, 3*moire%natom, alpha, &
                        dyn_mat%mat, 1, 1, dyn_mat%desca,            &
@@ -295,12 +384,6 @@ subroutine write_output(q_indx)
                        evec%mat, 1, 1, evec%desca,vel%mat,1,1,vel%desca,beta,&
                        vel%mat, 1, 1, vel%desca) 
           if (proc_should_write==1) then
-              call h5pcreate_f(H5P_DATASET_XFER_F, dlist_id, hdf5_error)
-              call h5pset_dxpl_mpio_f(dlist_id, H5FD_MPIO_INDEPENDENT_F, hdf5_error)
-
-              dim_mem(1) = vel%size_
-              call h5screate_simple_f(1, dim_mem, memspace, hdf5_error)
-
               do jastart = ja_first, pzheevx_vars%comp_num_evec, grid%npcol*vel%desca(NB_)
                   do iastart = ia_first, pzheevx_vars%comp_num_evec, grid%nprow*vel%desca(MB_)
                       iaend = min(vel%desca(M_), iastart+vel%desca(MB_)-1)
@@ -319,7 +402,7 @@ subroutine write_output(q_indx)
                                   coord_vel(2,1) = ja
                                   coord_vel(1,1) = i
                                   vel%mat(ipos) = vel%mat(ipos)/max(2*eval(ja), &
-                                                  sign(1.00,eval(ja))*1d-8)
+                                                sign(1.00,eval(ja))*1d-5)*18836.518100721545
                                   call h5sselect_elements_f(memspace,H5S_SELECT_APPEND_F,&
                                          1,ONE_, ipos, hdf5_error)
                                   call h5sselect_elements_f(dataspace_id, &
@@ -338,20 +421,23 @@ subroutine write_output(q_indx)
               deallocate(temp)
               call h5sselect_none_f(memspace, hdf5_error)
               call h5sselect_none_f(dataspace_id,hdf5_error)
-              call h5pclose_f(dlist_id, hdf5_error)
-              call h5sclose_f(memspace,hdf5_error)
           end if
         end do
-        call h5dclose_f(dset_id, hdf5_error)
-        call h5sclose_f(dataspace_id, hdf5_error)
-        write(done_line,"(3A)") "Group velocities written to ", trim(adjustl(file_name)), " on "
+    
+        if (proc_should_write==1) then
+            call h5sclose_f(memspace,hdf5_error)
+            call h5pclose_f(dlist_id, hdf5_error)
+            call h5dclose_f(dset_id, hdf5_error)
+            call h5sclose_f(dataspace_id, hdf5_error)
+            call h5gclose_f(group_id,hdf5_error)
+            call h5pclose_f(glist_id, hdf5_error)
+            call h5pclose_f(plist_id, hdf5_error)
+            call h5fclose_f(file_id, hdf5_error)
+        end if
+        call mpi_comm_free(write_comm, mpierr) 
+        write(done_line,"(3A)") "Group velocities written to ",trim(adjustl(file_name))," on "
         call date_time_message(trim(done_line))
     end if
-  
-    call h5gclose_f(group_id,hdf5_error)
-    call h5pclose_f(glist_id, hdf5_error)
-    call h5pclose_f(plist_id, hdf5_error)
-    call h5fclose_f(file_id, hdf5_error)
 
     call mpi_barrier(mpi_global%comm, mpierr)
 

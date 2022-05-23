@@ -11,8 +11,8 @@ atom style                   : molecular
 
 
 q file location              : ./
-q file name                  : qpt_bands.dat 
-nqpt                         : 130           
+q file name                  : dos_21.8.dat 
+nqpt                         : 884 
 
 
 force constant file location : ../../../Force_Constant_Generation/Examples/tblg_21.8
@@ -32,12 +32,12 @@ min index                    : 13
 max index                    : 16
 
 group velocity               : yes
-velocity method              : a
+velocity method              : cd
 
-mb                           : 32
-nb                           : 32
+mb                           : 8
+nb                           : 8
 abstol                       : 1E-16
 orfac                        : 1E-16
 
-output file name             : phbands_21.8_tblg_a
+output file name             : phbands_21.8_tblg_dos
 output_file_location         : ./

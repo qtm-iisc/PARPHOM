@@ -2,7 +2,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
-f = h5py.File('phbands_21.8_tblg_a.hdf5','r')
+f = h5py.File('phbands_21.8_tblg_cd_v1.hdf5','r')
 g = list(f.keys())
 
 eigval, vel = [], []
@@ -19,6 +19,8 @@ v = [[np.linalg.norm(vel[i,j]) for j in range(vel.shape[1])] for i in range(vel.
 v = np.array(v)
 for i in range(eigval.shape[1]):
     plt.plot(x,eigval[:,i],c='b',zorder=1)
-    plt.scatter(x,eigval[:,i],c=100000*v[:,i],alpha=abs(v[:,i]/np.max(v)),cmap='Reds',zorder=2)
+    #plt.scatter(x,eigval[:,i],c=v[:,i],alpha=abs(v[:,i]/np.max(v)),cmap='Reds',zorder=2)
+    plt.scatter(x,eigval[:,i],c=v[:,i],cmap='Reds',zorder=2)
+plt.ylim(-1,300)
 plt.colorbar()
 plt.show()

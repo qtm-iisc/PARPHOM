@@ -10,7 +10,8 @@
 
     mpiexec -np <no. of cores> get_force_constant -i <lammps input file> 
         
-        [ Optional arguments: -o Output file, -d Displacement of each atom]
+        [ Optional arguments: -o Output file, -d Displacement of each atom,
+                              -c compress file -s turn on symmetry]
     
     Theory
     ------
@@ -44,6 +45,8 @@ def parseOptions(comm):
                         nargs=argparse.OPTIONAL,default=False,type=bool)
     parser.add_argument("-s","--symmetrize",help="Symmetrize the Force constant",
                         nargs=argparse.OPTIONAL,default=False,type=bool)
+    parser.add_argument("-t","--iterations",help="Number of iterations to symmetrize",
+                        nargs=argparse.OPTIONAL,default=20,type=int)
     args = None
     try:
         if comm.Get_rank() == 0:
@@ -91,7 +94,7 @@ def get_structure_from_lammps(lammps_input_file,show_log=False):
         xhi, yhi, zhi = boxhi
     lat = np.array([[xhi-xlo, xy,  xz],
                     [0,  yhi-ylo,  yz],
-                    [0,   0,  zhi-zlo]]).T
+                    [0,   0,  zhi-zlo]])
     type_mass = lmp.extract_atom("mass", 2)
     type_ = lmp.gather_atoms("type", 0, 1)
     masses = np.array([type_mass[type_[i]] for i in range(na)], dtype=float)
@@ -199,7 +202,7 @@ def inversion_symmetry(data,local_atoms,natom):
         Impose inversion symmetry
     """
     for i in local_atoms:
-        for j in range(i+1,natom):
+        for j in range(i,natom):
             for alpha in range(3):
                 for beta in range(3):
                     mean = (data[i,j,alpha,beta] + data[j,i,beta,alpha])/2
@@ -214,7 +217,7 @@ def main():
     
     args = parseOptions(comm)
     lammps_input_file = args.input
-    na, lat, type_mass, at_types, asses, positions = get_structure_from_lammps(lammps_input_file)
+    na, lat, type_mass, at_types, masses, positions = get_structure_from_lammps(lammps_input_file)
     at_id = [i for i in range(na)]
     local_atoms = distribute(at_id,rank,size)
     f = h5py.File(args.output,'w',driver='mpio',comm=comm)
@@ -238,7 +241,7 @@ def main():
         print("Force constant generated and written", flush=True)
     comm.Barrier()
     if args.symmetrize:
-        symmetrize_fc(args.output,comm,local_atoms,na,20)
+        symmetrize_fc(args.output,comm,local_atoms,na,args.iterations)
     return
 
 if __name__ == '__main__':
