@@ -101,7 +101,7 @@ subroutine write_output(q_indx)
     ! -----------------------
 
     dim_eval(1) = pzheevx_vars%comp_num_eval
-    eval = eval*15.633302*33.35641
+    eval = eval*15.633302*33.35641   ! in cm-1
     call h5screate_simple_f(1, dim_eval, filespace, hdf5_error)
     call h5dcreate_f(group_id, 'eigenvalues', H5T_IEEE_F64LE, filespace, dset_id, hdf5_error)
 
@@ -318,8 +318,8 @@ subroutine write_output(q_indx)
 
         do jastart = ja_first, pzheevx_vars%comp_num_evec, grid%npcol*vel%desca(NB_)
             do iastart = ia_first, pzheevx_vars%comp_num_evec, grid%nprow*vel%desca(MB_)
-                iaend = min(dyn_mat%desca(M_), iastart+dyn_mat%desca(MB_)-1)
-                jaend = min(dyn_mat%desca(N_), jastart+dyn_mat%desca(NB_)-1)
+                iaend = min(vel%desca(M_), iastart+vel%desca(MB_)-1)
+                jaend = min(vel%desca(N_), jastart+vel%desca(NB_)-1)
                 do ja=jastart,jaend
                     do ia=iastart,iaend
                         if (ia==ja) then

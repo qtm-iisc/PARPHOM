@@ -20,6 +20,6 @@ setup(name = 'pyphutil',
       url = "https://github.com/ShinjanM/MoirePhonons",
       packages = ['pyphutil'],
       package_dir = {'pyphutil':'pyphutil/'},
-      install_requires = open('requirements.txt').read(),
+      #install_requires = open('requirements.txt').read(),
       ext_modules = [ext1,ext2]
       )

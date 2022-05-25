@@ -4,7 +4,7 @@
     Email : mshinjan@iisc.ac.in
 """
 import numpy as np
-import spglib
+from pyphutil.distribute_lists import distribute
 import h5py
 
 class moire_phonon_utils():
@@ -105,6 +105,8 @@ class moire_phonon_utils():
                                      If symmetry is off this file is not created.
         """
         
+        import spglib
+
         cell = (self.lat.T, self.crys_pos, self.at_types)
         if GAMMA==True:
             # Γ centered Mesh
@@ -226,7 +228,6 @@ class moire_phonon_utils():
         
         from bz_integration import bz_integration as bzi
         from mpi4py import MPI
-        from pyphutil.distribute_lists import distribute
         
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()  
@@ -342,4 +343,73 @@ class moire_phonon_utils():
                 f.close()
                 print("\nWritten DOS to %s"%(output_file), flush=True)
             
-        return        
+        return    
+
+
+
+    def compute_polarization(self, evec):
+        """
+            Computes the polarization of a particular mode
+            
+            Input
+            -----
+                evec: Eigenvector (numpy array of length 3*natom)
+            Output
+            ------
+
+                sx,sy,sz: polarization in x,y and z
+
+
+            Theory
+            ------
+
+                s_x = 2*[Re(e_y)*Im(e_z) - Im(e_y)*Re(e_z)]
+                s_y = 2*[Re(e_z)*Im(e_x) - Im(e_z)*Re(e_x)]
+                s_z = 2*[Re(e_x)*Im(e_y) - Im(e_x)*Re(e_y)]
+        """ 
+        evec = evec.reshape(-1,3)
+        ex_r,ex_i = evec[:,0].real, evec[:,0].imag
+        ey_r,ey_i = evec[:,1].real, evec[:,1].imag
+        ez_r,ez_i = evec[:,2].real, evec[:,2].imag
+        s_x = 2*(ey_r@ez_i - ey_i@ez_r)
+        s_y = 2*(ez_r@ex_i - ez_i@ex_r)
+        s_z = 2*(ex_r@ey_i - ex_i@ey_r)
+        return s_x, s_y, s_z
+
+
+    def chirality(self,
+                  ph_data_file, 
+                  output_file_name,
+                  compression=False):
+        
+        from mpi4py import MPI
+
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+
+        f = h5py.File(ph_data_file,'r')
+        groups = list(f.keys())
+
+        nqpt = len(groups)
+
+        loc_groups = distribute(groups,rank,size)
+
+        out_f = h5py.File(output_file_name,'w',driver='mpio',comm=comm)
+        if compression:
+            dset_out = out_f.create_dataset('chirality',((nqpt,3*self.natom,3)),dtype=np.float64,
+                                            compression='gzip',compression_opts=9)
+        else:
+            dset_out = out_f.create_dataset('chirality',((nqpt,3*self.natom,3)),dtype=np.float64)
+        
+        for lg in loc_groups:
+            for nu in range(3*self.natom):
+                evec_q = f[lg]['evec'][nu]
+                sx,sy,sz = self.compute_polarization(evec_q)
+                dset_out[int(lg)-1,nu,:] = np.array([sx,sy,sz],dtype=np.float64)
+            print("Rank %d finished computations at q-point %d"%(rank,int(lg)),flush=True)
+        f.close()
+        out_f.close()
+
+        return
