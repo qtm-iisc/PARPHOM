@@ -11,5 +11,5 @@
 
 We displace every atom by a finite distance and compute the derivative of the Forces on the atoms due to the displacement.  
 ```
-        $\phi_{a,b}^{i,j} = -\frac{dF_{b,j}}{dr_{a,i}}$
+    <img src="https://render.githubusercontent.com/render/math?math=\phi_{a,b}^{i,j} = -\frac{dF_{b,j}}{dr_{a,i}}">
 ```
