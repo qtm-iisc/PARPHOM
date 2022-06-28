@@ -13,6 +13,6 @@ read_data       /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Ex
 #4 potentials
 pair_style      hybrid/overlay drip rebo
 
-# SW for layer 1
+# Drip and Rebo between layer 1 & 2
 pair_coeff   * *  drip /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tblg_21.8/C.drip   C
 pair_coeff   * *  rebo /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tblg_21.8/CH.rebo  C

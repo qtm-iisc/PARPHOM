@@ -383,6 +383,9 @@ subroutine write_output(q_indx)
           call pzgemm('C','N',3*moire%natom, 3*moire%natom, 3*moire%natom, alpha,  &
                        evec%mat, 1, 1, evec%desca,vel%mat,1,1,vel%desca,beta,&
                        vel%mat, 1, 1, vel%desca) 
+            
+          
+
           if (proc_should_write==1) then
               do jastart = ja_first, pzheevx_vars%comp_num_evec, grid%npcol*vel%desca(NB_)
                   do iastart = ia_first, pzheevx_vars%comp_num_evec, grid%nprow*vel%desca(MB_)
@@ -402,7 +405,7 @@ subroutine write_output(q_indx)
                                   coord_vel(2,1) = ja
                                   coord_vel(1,1) = i
                                   vel%mat(ipos) = vel%mat(ipos)/max(2*eval(ja), &
-                                                sign(1.00,eval(ja))*1d-5)*18836.518100721545
+                                                sign(1.00,eval(ja))*5d-1)*18836.518100721545
                                   call h5sselect_elements_f(memspace,H5S_SELECT_APPEND_F,&
                                          1,ONE_, ipos, hdf5_error)
                                   call h5sselect_elements_f(dataspace_id, &

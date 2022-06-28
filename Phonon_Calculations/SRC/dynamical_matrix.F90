@@ -126,7 +126,7 @@ subroutine create_dynamical_matrix(q_indx, derivative)
 
 
 
-#ifdef __KPOOL    
+#ifdef __QPOOL    
     call mpi_barrier(mpi_local%comm, mpierr)
     write(debug_str,'(A,I0,A)') "Dynamical Matrix created for q-pt no.", q_indx ," on "
 
@@ -165,7 +165,7 @@ subroutine create_dynamical_ij(ipos, q_point, inp_ia, inp_ja, deriv_order, deriv
 
   ia = int((inp_ia+2)/3)
   ja = int((inp_ja+2)/3)
-  do l= -1,9
+  do l= 1,9
     i = (l-1)/3 - 1
     j = l - 2 - 3*(i+1)
     rj_sup(1) = moire%crys(ja,1) + i
@@ -194,7 +194,7 @@ subroutine create_dynamical_ij(ipos, q_point, inp_ia, inp_ja, deriv_order, deriv
         phase = phase + exp(-2*PI*IM*prephase)
     else if (deriv_order==1) then
         rj_sup = matmul(transpose(moire%lat),rj_sup)
-        phase = phase - exp(-2*PI*IM*prephase)*IM*rj_sup(derivative) 
+        phase = phase - exp(-2*PI*IM*prephase)*IM*rj_sup(derivative)
     end if
     multiplicity = multiplicity + 1
   end do

@@ -1,0 +1,43 @@
+# ---------------------------------------------------
+# Input file for Phonon Calculations in Moire Systems
+# ---------------------------------------------------
+
+
+lammps file location         : ../../../Force_Constant_Generation/Examples/tbwse2_21.8/
+lammps file name             : lammps.dat_final
+natom                        : 42
+atom types                   : 6
+atom style                   : atomic
+
+
+q file location              : ./
+q file name                  : full_grid_100X100
+nqpt                         : 10000
+
+
+#force constant file location : ../../../Force_Constant_Generation/Examples/tbwse2_21.8/
+force constant file location : /home/mshinjan/Twister/examples/Homobilayer_hex/WSe2/Angle_21.78 
+force constant file name     : FORCE_CONSTANTS
+force constant dataset       : force_constants
+
+
+num qpools                   : 3
+
+
+compute eigvecs              : yes
+range                        : A       
+min eigval                   : -2.000
+max eigval                   : 100       
+min index                    : 13
+max index                    : 16
+
+group velocity               : yes
+velocity_method              : analytic
+
+mb                           : 4
+nb                           : 4
+abstol                       : 1E-15
+orfac                        : 1E-15
+
+output file name             : phbands_dos_21.8
+output_file_location         : ./

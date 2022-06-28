@@ -18,14 +18,13 @@ FLFLAGS = ${BLAS_LIBS} ${LAPACK_LIBS} ${SCALAPACK_LIBS}
 FCFLAGS = -O3 -g -traceback -ip -assume bscc -I${MKLROOT}/include/intel64/ilp64 -i8 -I${MKLROOT}/include -fPIC -Winline -warn unused 
 
 CPP = cpp -P 
-CPPFLAGS = #-D__DEBUG #-D__KPOOL -D__DEBUG
+CPPFLAGS = #-D__DEBUG -D__QPOOL
 
 
 all: $(MODOBJS) $(OBJS)
 	$(FC) $(FCFLAGS) -o $(EXE) $(OBJS) $(MODOBJS) $(FLFLAGS)
 
 $(MODOBJS): %.o: %.F90
-# $(CPP) $(CPPFLAGS) $< | sed '/^#pragma/d' > $*.f90
 	$(CPP) $(CPPFLAGS) $< $*.f90
 	$(FC) $(FCFLAGS) -module $(SRC_DIR) -c $*.f90 -o $@
 
@@ -47,4 +46,4 @@ debug:
 
 .PHONY: clean
 clean:
-	rm -f $(SRC_DIR)*.o $(SRC_DIR)*.mod $(EXE) $(SRC_DIR)*.f90
+	rm -f $(SRC_DIR)*.o $(SRC_DIR)*.mod $(EXE) $(SRC_DIR)*.f90 

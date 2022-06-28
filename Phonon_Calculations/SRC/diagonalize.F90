@@ -78,8 +78,8 @@ subroutine diagonalize_dynamical_matrix()
     eval = sqrt(abs(eval))*sign(1.00,eval)
 
 #ifdef __DEBUG    
-#ifdef __KPOOL
-    if (mpi_global%local==0) then
+#ifdef __QPOOL
+    if (mpi_local%rank==0) then
 #else
     if (mpi_global%rank==0) then
 #endif
@@ -94,7 +94,7 @@ subroutine diagonalize_dynamical_matrix()
     deallocate(ifail)
     deallocate(iclustr)
 
-#ifdef __KPOOL
+#ifdef __QPOOL
     write(done_line,"(A,I0,A)") "Diagonalization completed in group : ",mpi_local%color,&
                                    " on "
     call date_time_message_local(trim(done_line))

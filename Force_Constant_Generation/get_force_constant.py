@@ -2,13 +2,13 @@
     Author: Shinjan Mandal
     Contact: mshinjan@iisc.ac.in
     Github: ShinjanM
-
+    
     Generation of Force constants by finite difference method.
     
     Usage
     -----
 
-    mpiexec -np <no. of cores> get_force_constant -i <lammps input file> 
+    mpiexec -np <no. of cores> get_force_constant.py -i <lammps input file> 
         
         [ Optional arguments: -o Output file, -d Displacement of each atom,
                               -c compress file -s turn on symmetry]
@@ -19,7 +19,7 @@
     We displace every atom by a finite distance and compute the derivative of the 
     Forces on the atoms due to the displacement.
 
-        $\phi_{a,b}^{i,j} = -\frac{dF_{b,j}}{dr_{a,i}}$
+        $\phi_{a,b}^{i,j} = - \frac{dF_{b,j}}{dr_{a,i}}$
 
 """
 
@@ -30,7 +30,7 @@ import numpy as np
 from lammps import lammps
 import h5py
 import argparse
-
+from time import time
 
 def parseOptions(comm):
     parser = argparse.ArgumentParser(description='Print some messages.')
@@ -41,12 +41,12 @@ def parseOptions(comm):
                         default='FORCE_CONSTANTS')
     parser.add_argument("-d","--displacement",help="Displacement of each atom",
                         nargs=argparse.OPTIONAL,default=0.0001,type=float)
-    parser.add_argument("-c","--compression",help="Compress output file",
-                        nargs=argparse.OPTIONAL,default=False,type=bool)
     parser.add_argument("-s","--symmetrize",help="Symmetrize the Force constant",
-                        nargs=argparse.OPTIONAL,default=False,type=bool)
+                        default=False,action="store_true")
     parser.add_argument("-t","--iterations",help="Number of iterations to symmetrize",
                         nargs=argparse.OPTIONAL,default=20,type=int)
+    parser.add_argument("-r","--replicate",help="Replicate the cell",
+                        nargs=3,type=int,default=[1,1,1])
     args = None
     try:
         if comm.Get_rank() == 0:
@@ -101,7 +101,8 @@ def get_structure_from_lammps(lammps_input_file,show_log=False):
     at_types = np.array([type_[i] for i in range(na)],dtype=int)
     xp = lmp.extract_atom("x", 3)
     positions = np.array([[xp[i][0], xp[i][1], xp[i][2]] for i in range(na)], dtype=float)
-    return na, lat, type_mass, at_types, masses, positions
+    crys = np.array([np.linalg.solve(lat,positions[i]) for i in range(na)])
+    return na, lat, type_mass, at_types, masses, positions,crys
 
 
 def distribute(list_to_be_distributed, rank, size):
@@ -130,46 +131,79 @@ def distribute(list_to_be_distributed, rank, size):
                                  (rank+1)*number_of_local_points))
     return local_list
 
+def get_forces(lmp, id_, reference, natom, d,at_id,alpha):
+    ref = np.copy(reference)
+    ref[at_id,alpha] += d
+    for i in range(natom):
+        lmp.command('set atom {} x {} y {} z {}'.format(id_[i]+1,
+                                                        ref[i,0],
+                                                        ref[i,1],
+                                                        ref[i,2]))
+    lmp.command('run 0')
+    fp = lmp.extract_atom("f",3)
+    forces = np.array([[fp[i][0], fp[i][1], fp[i][2]] for i in range(natom)],dtype=np.float64)
+    return forces
 
-def get_force_constant(lammps_input_file,displacement,at_id,alpha):
+
+def get_force_constant(lammps_input_file,displacement,at_id,alpha,replicate,show_log=False):
     
-    cmd_list = ['-log', 'none', '-echo', 'none', '-screen', 'none']
+    cmd_list = ['-log', 'none']
+    if not show_log:
+        cmd_list += ['-echo', 'none', '-screen', 'none']
     lmp = lammps(cmdargs=cmd_list)
     lmp.file(lammps_input_file)
+    
+    # Replicate the atoms
+    # -------------------
+
+    # For standard potentials this command would work
+
+    lmp.command('replicate {} {} {}'.format(replicate[0],replicate[1],replicate[2]))
+
+    # ---------------------------------------------------------------------
+    # For potentials that work between different molecular types,
+    # you have to define the criteria for defining the molecular types in 
+    # a replicated layout
+    # Uncomment the following lines if you want are working with the Drip
+    # potential in tBLG and want to define layer 1 as molecule 1 and 
+    # layer 2 as molecule 2
+    #
+    # Refer: https://github.com/lammps/lammps/issues/3047
+    #
+    # Note that if you are working with multi-layered graphene systems and
+    # Drip potential, you need to have cutoffs for multiple layers.
+    # ---------------------------------------------------------------------
+
+    
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #
+    # UNCOMMENT THIS SECTION FOR DRIP POTENTIALS
+    #
+    #layer_cutoff = 16.5  # change this cutoff depending upon your convenience
+    #lmp.command('variable z atom z<%f'%layer_cutoff)
+    #lmp.command('group layer1 variable z')
+    #lmp.command('group layer2 subtract all layer1')
+    #lmp.command('set group layer1 mol 1')
+    #lmp.command('set group layer2 mol 2')
+    # 
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
     lmp.command('run 0')
+
     na = lmp.get_natoms()
    
     fp = lmp.extract_atom("f",3)
     forces = np.array([[fp[i][0], fp[i][1], fp[i][2]] for i in range(na)], dtype=np.float64)
     
+    id_ = lmp.extract_atom("id",0)
+    id_ = np.array([id_[i]-1 for i in range(na)], dtype=np.int64)
+    
     xp = lmp.extract_atom("x", 3)
     reference = np.array([[xp[i][0], xp[i][1], xp[i][2]] for i in range(na)], dtype=np.float64)
-
-    reference[at_id,alpha] -= displacement/2
-    id_ = lmp.extract_atom("id", 0)
-    id_ = np.array([id_[i]-1 for i in range(na)], dtype=np.int64)
-    for i in range(na):
-        lmp.command('set atom {} x {} y {} z {}'.format(id_[i]+1,
-                                                        reference[i,0],
-                                                        reference[i,1],
-                                                        reference[i,2]))
-    lmp.command('run 0')
-    fp1 = lmp.extract_atom("f",3)
-    forces1 = np.array([[fp1[i][0], fp1[i][1], fp1[i][2]] for i in range(na)], dtype=np.float64)
-    # ---------
-    reference[at_id,alpha] += displacement
-    id_ = lmp.extract_atom("id", 0)
-    id_ = np.array([id_[i]-1 for i in range(na)], dtype=np.int64)
-    for i in range(na):
-        lmp.command('set atom {} x {} y {} z {}'.format(id_[i]+1,
-                                                        reference[i,0],
-                                                        reference[i,1],
-                                                        reference[i,2]))
-    lmp.command('run 0')    
-    fp2 = lmp.extract_atom("f",3)
-    forces2 = np.array([[fp2[i][0], fp2[i][1], fp2[i][2]] for i in range(na)], dtype=np.float64)
-    # ---------
-    fc = -(forces2-forces1)/displacement
+    f1 = get_forces(lmp, id_, reference, na, -displacement/2, at_id, alpha)
+    f2 = get_forces(lmp, id_, reference, na,  displacement/2, at_id, alpha)
+    fc = -(f2-f1)/displacement
+    
     return fc
 
 
@@ -183,6 +217,8 @@ def symmetrize_fc(fc_file,comm,local_atoms,natom,no_of_iterations):
     for i in range(no_of_iterations):
         acoustic_sum_rule(data,local_atoms)
         inversion_symmetry(data,local_atoms,natom)
+        if comm.rank==0:
+            print("Symmetry iteration %6d/%d completed"%(i+1, no_of_iterations),flush=True)
     f.close()
     return
 
@@ -193,7 +229,9 @@ def acoustic_sum_rule(data,local_atoms):
     for i in local_atoms:
         for alpha in range(3):
             for beta in range(3):
-                data[i,:,alpha,beta] -= np.mean(data[i,:,alpha,beta])
+                col_j = data[i,:,alpha,beta]
+                col_j -= np.mean(col_j)
+                data[i,:,alpha,beta] = col_j
     return
 
 
@@ -210,39 +248,69 @@ def inversion_symmetry(data,local_atoms,natom):
                     data[j,i,beta,alpha] = mean
     return
 
+def p2s_map(lat,lammps_input_file, replicate,natom,crys):
+    cmd_list = ['-log', 'none', '-echo', 'none', '-screen', 'none']
+    lmp = lammps(cmdargs=cmd_list)
+    lmp.file(lammps_input_file)
+    lmp.command('run 0')
+    lmp.command('replicate {} {} {}'.format(replicate[0],replicate[1],replicate[2]))
+    lmp.command('run 0')
+    na = lmp.get_natoms()
+    id_ = lmp.extract_atom("id",0)
+    id_ = np.array([id_[i]-1 for i in range(na)], dtype=np.int64)
+
+    xp = lmp.extract_atom("x", 3)
+    xp_rep = np.array([[xp[i][0], xp[i][1], xp[i][2]] for i in range(na)], dtype=np.float64)
+    
+    xp_crys = np.array([np.linalg.solve(lat,xp_rep[i]) for i in range(na)])
+    p2s_map = np.array(xp_crys-np.tile(crys,(np.prod(replicate),1)))
+    p2s_map[np.abs(p2s_map)<1e-8] = 0
+    na_arr = np.array([i for i in range(na)])
+    p_map = np.where(~p2s_map.any(axis=1))[0]
+    return p2s_map, p_map
+
 def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
-    
+    st = time()
     args = parseOptions(comm)
+    args.replicate = np.array(args.replicate)
+    
     lammps_input_file = args.input
-    na, lat, type_mass, at_types, masses, positions = get_structure_from_lammps(lammps_input_file)
-    at_id = [i for i in range(na)]
-    local_atoms = distribute(at_id,rank,size)
-    f = h5py.File(args.output,'w',driver='mpio',comm=comm)
-    if args.compression:
-        dset = f.create_dataset('force_constants',((na,na,3,3)),dtype='f',compression='gzip',compression_opts=9)
-    else:
-        dset = f.create_dataset('force_constants',((na,na,3,3)),dtype='f')
+    na, lat, type_mass, at_types, masses, positions, crys = get_structure_from_lammps(lammps_input_file)
+    na_replicated = na*np.prod(args.replicate)
 
-    cartesian_symb = ['x','y','z']
+
+    f = h5py.File(args.output,'w',driver='mpio',comm=comm)
+
+    if np.allclose(args.replicate,np.array([1,1,1]))!=True:
+        p1,p2 = p2s_map(lat,lammps_input_file, args.replicate, na,crys)
+        dset_p2smap = f.create_dataset('p2s_map',data=p1,dtype=int)
+        dset_p_indices = f.create_dataset('p_indices',data=p2,dtype=int)
+
+    dset = f.create_dataset('force_constants',((na_replicated,na_replicated,3,3)),dtype=np.float64)
+    
+    at_id = [i for i in range(na_replicated)]
+    
+    local_atoms = distribute(at_id,rank,size)
+    
     for j in local_atoms:
         for beta in range(3):
-            fc = get_force_constant(lammps_input_file,args.displacement,j,beta)
-            if args.compression:
-                with dset.collective:
-                    dset[j,:,beta] = np.array(fc,dtype='f')
-            else:
-                dset[j,:,beta] = np.array(fc,dtype='f')
-            print("Rank %d finished displacing atom %d/%d along %s"%(rank, j, local_atoms[len(local_atoms)-1], cartesian_symb[beta]),flush=True)
+            fc = get_force_constant(lammps_input_file,args.displacement,j,beta,args.replicate)
+            dset[j,:,beta] = np.array(fc,dtype='f')
+        print("Rank %d finished displacing atom %d/%d"%(rank, j+1, local_atoms[len(local_atoms)-1]+1),flush=True)
     f.close()
     if rank==0: 
-        print("Force constant generated and written", flush=True)
+        print("Force constant generated and written in %.3f sec"%(time()-st), flush=True)
     comm.Barrier()
+    st = time()
     if args.symmetrize:
-        symmetrize_fc(args.output,comm,local_atoms,na,args.iterations)
+        symmetrize_fc(args.output,comm,local_atoms,na_replicated,args.iterations)
+        if rank==0:
+            print("Symmetrization finished in %.3f sec"%(time()-st),flush=True)
     return
+
 
 if __name__ == '__main__':
     main()

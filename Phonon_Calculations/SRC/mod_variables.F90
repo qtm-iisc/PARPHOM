@@ -82,7 +82,7 @@ module global_variables
     type(mpi_group) :: mpi_global
     integer  :: mpierr
 
-#ifdef __QKPOOL
+#ifdef __QPOOL
     type(mpi_group) :: mpi_local
     integer  :: num_pools
 #endif

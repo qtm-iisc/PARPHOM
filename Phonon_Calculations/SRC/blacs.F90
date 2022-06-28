@@ -7,14 +7,14 @@ subroutine blacs_grid_initialization()
 #ifdef __DEBUG
     integer :: i
 #endif
-#ifdef __KPOOL
+#ifdef __QPOOL
     integer, allocatable, dimension(:,:) :: map, dim_
     integer, allocatable, dimension(:) :: icontxts
     integer :: global_icontxt, st_group, j, k
     character(500) :: format_
 #endif
 
-#ifdef __KPOOL
+#ifdef __QPOOL
 
     ! With KPools
     ! -----------
@@ -210,7 +210,7 @@ end subroutine
 
 
 
-#ifdef __KPOOL
+#ifdef __QPOOL
 subroutine get_color(proc_id, total_procs, no_of_groups, val, key_val, num_each)
 
     ! returns the color to split the communicators depending

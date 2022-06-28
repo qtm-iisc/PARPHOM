@@ -6,6 +6,7 @@
 import numpy as np
 from pyphutil.distribute_lists import distribute
 import h5py
+import matplotlib.pyplot as plt
 
 class moire_phonon_utils():
     """
@@ -248,7 +249,7 @@ class moire_phonon_utils():
             counter = 0
             for group in data.keys():
                 ds_data = data[group]['eigenvalues']
-                Freq[counter] = ds_data[:]
+                Freq[counter] = ds_data[:]              # in cm^{-1}
                 counter += 1
             
             for i in range(len(grid)):
@@ -289,26 +290,15 @@ class moire_phonon_utils():
             dos_loc, nd_loc = bzi.linear_triangulation(nbands, loc_tri, len(E), E,
                                                        Freq, func, rank) 
             
-            #Master_list_global_dos = []
-            #Master_list_global_dos = comm.gather(dos_loc, root=0)
-            #Master_list_global_ndos = []
-            #Master_list_global_ndos = comm.gather(nd_loc, root=0)
-
             DOS = np.zeros(len(dos_loc),dtype=dos_loc.dtype)
             ND = np.zeros(len(nd_loc),dtype=nd_loc.dtype)
             comm.Allreduce(dos_loc,DOS,op=MPI.SUM)
             comm.Allreduce(nd_loc,ND,op=MPI.SUM)
             
-            DOS *= (2/number_of_triangles/3)/moire_area 
-            ND *= (2/number_of_triangles/3)/moire_area *3*self.natom/nbands
+            DOS *= (1/number_of_triangles/3)/moire_area 
+            ND *= (1/number_of_triangles/3)/moire_area *3*self.natom/nbands
             
             if rank == 0:
-                #DOS = np.zeros(len(dos_loc))
-                #ND = np.zeros(len(nd_loc))
-                #for i in range(size):
-                #    DOS += Master_list_global_dos[i]
-                #    ND += Master_list_global_ndos[i]
-
                 f = open(output_file,'w+')
                 for i in range(len(E)):
                     f.writelines("%f\t\t%f\t%f\n"%(E[i],DOS[i],ND[i]))
@@ -359,10 +349,8 @@ class moire_phonon_utils():
 
                 sx,sy,sz: polarization in x,y and z
 
-
             Theory
             ------
-
                 s_x = 2*[Re(e_y)*Im(e_z) - Im(e_y)*Re(e_z)]
                 s_y = 2*[Re(e_z)*Im(e_x) - Im(e_z)*Re(e_x)]
                 s_z = 2*[Re(e_x)*Im(e_y) - Im(e_x)*Re(e_y)]
@@ -380,8 +368,14 @@ class moire_phonon_utils():
     def chirality(self,
                   ph_data_file, 
                   output_file_name,
-                  compression=False):
-        
+                  nbands):
+        """
+            Writes the chirality data for all q-points
+
+            ph_data_file :: phonon data output file containing the eigenvectors
+
+        """
+
         from mpi4py import MPI
 
         comm = MPI.COMM_WORLD
@@ -397,14 +391,10 @@ class moire_phonon_utils():
         loc_groups = distribute(groups,rank,size)
 
         out_f = h5py.File(output_file_name,'w',driver='mpio',comm=comm)
-        if compression:
-            dset_out = out_f.create_dataset('chirality',((nqpt,3*self.natom,3)),dtype=np.float64,
-                                            compression='gzip',compression_opts=9)
-        else:
-            dset_out = out_f.create_dataset('chirality',((nqpt,3*self.natom,3)),dtype=np.float64)
+        dset_out = out_f.create_dataset('chirality',((nqpt,nbands,3)),dtype=np.float64)
         
         for lg in loc_groups:
-            for nu in range(3*self.natom):
+            for nu in range(nbands):
                 evec_q = f[lg]['evec'][nu]
                 sx,sy,sz = self.compute_polarization(evec_q)
                 dset_out[int(lg)-1,nu,:] = np.array([sx,sy,sz],dtype=np.float64)
