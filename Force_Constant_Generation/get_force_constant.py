@@ -10,8 +10,11 @@
 
     mpiexec -np <no. of cores> get_force_constant.py -i <lammps input file> 
         
-        [ Optional arguments: -o Output file, -d Displacement of each atom,
-                              -c compress file -s turn on symmetry]
+        [ Optional arguments: -o Output file, 
+                              -d Displacement of each atom,
+                              -s turn on symmetry,
+                              -t Number of symmetry operations
+                              -r Replicate]
     
     Theory
     ------
@@ -31,6 +34,8 @@ from lammps import lammps
 import h5py
 import argparse
 from time import time
+
+
 
 def parseOptions(comm):
     parser = argparse.ArgumentParser(description='Print some messages.')
@@ -57,6 +62,8 @@ def parseOptions(comm):
     if args is None:
         exit(0)
     return args
+
+
 
 
 def get_structure_from_lammps(lammps_input_file,show_log=False):
@@ -105,6 +112,8 @@ def get_structure_from_lammps(lammps_input_file,show_log=False):
     return na, lat, type_mass, at_types, masses, positions,crys
 
 
+
+
 def distribute(list_to_be_distributed, rank, size):
     """
         Input:
@@ -131,6 +140,10 @@ def distribute(list_to_be_distributed, rank, size):
                                  (rank+1)*number_of_local_points))
     return local_list
 
+
+
+
+
 def get_forces(lmp, id_, reference, natom, d,at_id,alpha):
     ref = np.copy(reference)
     ref[at_id,alpha] += d
@@ -143,6 +156,8 @@ def get_forces(lmp, id_, reference, natom, d,at_id,alpha):
     fp = lmp.extract_atom("f",3)
     forces = np.array([[fp[i][0], fp[i][1], fp[i][2]] for i in range(natom)],dtype=np.float64)
     return forces
+
+
 
 
 def get_force_constant(lammps_input_file,displacement,at_id,alpha,replicate,show_log=False):
@@ -249,6 +264,12 @@ def inversion_symmetry(data,local_atoms,natom):
     return
 
 def p2s_map(lat,lammps_input_file, replicate,natom,crys):
+    """
+        Primitive to supercell map in case of force constants generated in supercells
+        Returns the indices of the atoms in the replicated lammps file which are 
+        equivalent to the atoms in the original unit cell.
+    """
+
     cmd_list = ['-log', 'none', '-echo', 'none', '-screen', 'none']
     lmp = lammps(cmdargs=cmd_list)
     lmp.file(lammps_input_file)
@@ -261,13 +282,14 @@ def p2s_map(lat,lammps_input_file, replicate,natom,crys):
 
     xp = lmp.extract_atom("x", 3)
     xp_rep = np.array([[xp[i][0], xp[i][1], xp[i][2]] for i in range(na)], dtype=np.float64)
-    
     xp_crys = np.array([np.linalg.solve(lat,xp_rep[i]) for i in range(na)])
     p2s_map = np.array(xp_crys-np.tile(crys,(np.prod(replicate),1)))
     p2s_map[np.abs(p2s_map)<1e-8] = 0
     na_arr = np.array([i for i in range(na)])
     p_map = np.where(~p2s_map.any(axis=1))[0]
     return p2s_map, p_map
+
+
 
 def main():
     comm = MPI.COMM_WORLD
