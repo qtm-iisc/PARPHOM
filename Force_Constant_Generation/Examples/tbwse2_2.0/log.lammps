@@ -1,0 +1,39 @@
+LAMMPS (7 Jan 2022)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (../comm.cpp:98)
+  using 1 OpenMP thread(s) per MPI task
+#Initialize--
+#general settings
+units           metal
+dimension       3
+box tilt        large
+atom_style      atomic
+
+# structure
+boundary        p p p
+read_data       lammps.dat
+Reading data file ...
+  triclinic box = (-0.48258868 -0.41793406 0) to (95.378847 82.600505 100) with tilt (47.930718 0 0)
+WARNING: Triclinic box skew is large (../domain.cpp:219)
+  1 by 1 by 1 MPI processor grid
+  reading atoms ...
+  4902 atoms
+  reading velocities ...
+  4902 velocities
+  read_data CPU = 0.029 seconds
+
+# potentials
+pair_style hybrid/overlay sw/mod maxdelcs 0.25 0.35 sw/mod maxdelcs 0.25 0.35 kolmogorov/crespi/z 14.0 kolmogorov/crespi/z 14.0 kolmogorov/crespi/z 14.0 kolmogorov/crespi/z 14.0 lj/cut 10.0
+
+# Intralayer Interaction
+pair_coeff * * sw/mod 1 wse2.sw W Se Se NULL NULL NULL
+pair_coeff * * sw/mod 2 wse2.sw NULL NULL NULL W Se Se
+
+# Interlayer Interaction
+pair_coeff 1 5 kolmogorov/crespi/z 1 WSe2.KC W NULL NULL  NULL Se NULL
+pair_coeff 3 4 kolmogorov/crespi/z 2 WSe2.KC NULL NULL Se W NULL NULL
+pair_coeff 3 5 kolmogorov/crespi/z 3 WSe2.KC NULL NULL Se NULL Se NULL
+pair_coeff 1 4 kolmogorov/crespi/z 4 WSe2.KC W NULL NULL  W NULL NULL
+pair_coeff * * lj/cut 0.0 3.0
+neighbor        2.0 bin
+neigh_modify every 1 delay 0 check yes
+Total wall time: 0:00:00
