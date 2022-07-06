@@ -154,7 +154,7 @@ subroutine create_dynamical_ij(ipos, q_point, inp_ia, inp_ja, deriv_order, deriv
   double precision, dimension(3) :: q_point
   double complex, intent(out) :: dij
   double precision, parameter :: PI  = 3.141592653589793
-  double precision, parameter :: tol = 1e-8
+  double precision, parameter :: tol = 1e-10
   double complex, parameter   :: IM  = (0.0000000000000000,1.0000000000000000)
   double precision, dimension(3) :: rj_sup
   integer :: l,i,j, ix, multiplicity, ia, ja

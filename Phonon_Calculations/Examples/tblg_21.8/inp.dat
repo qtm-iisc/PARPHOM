@@ -38,8 +38,8 @@ velocity method              : a
 
 mb                           : 4
 nb                           : 4
-abstol                       : 1E-18
-orfac                        : 1E-18
+abstol                       : 1E-14
+orfac                        : 1E-14
 
-output file name             : phbands_21.8_fine_grid
+output file name             : phbands_21.8_fine
 output_file_location         : ./ #/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/Phonopy_Comparision

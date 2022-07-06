@@ -164,15 +164,15 @@ SUBROUTINE read_lammps_data()
     CALL linsolve(moire%real_pos(i,:),moire%lat,moire%crys(i,:))
   END DO
 
-  !DO i=1,moire%natom
-  !  DO j=1,3
-  !      moire%crys(i,j) = moire%crys(i,j) + moire%sup_cell_info(i,j)
-  !      moire%real_pos(i,j) = moire%real_pos(i,j) + &
-  !                            moire%sup_cell_info(i,1)*moire%lat(1,j) + &
-  !                            moire%sup_cell_info(i,2)*moire%lat(2,j) + &
-  !                            moire%sup_cell_info(i,3)*moire%lat(3,j)
-  !  END DO
-  !END DO
+!  DO i=1,moire%natom
+!    DO j=1,3
+!        moire%crys(i,j) = moire%crys(i,j) + moire%sup_cell_info(i,j)
+!        moire%real_pos(i,j) = moire%real_pos(i,j) + &
+!                              moire%sup_cell_info(i,1)*moire%lat(1,j) + &
+!                              moire%sup_cell_info(i,2)*moire%lat(2,j) + &
+!                              moire%sup_cell_info(i,3)*moire%lat(3,j)
+!    END DO
+!  END DO
 
 #ifdef __DEBUG
       WRITE(debug_str, '(A)') '\r\n Atom type         X          Y          Z'

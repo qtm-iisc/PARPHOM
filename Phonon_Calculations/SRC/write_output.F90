@@ -405,8 +405,9 @@ subroutine write_output(q_indx)
                                   coord_vel(2,1) = ja
                                   coord_vel(1,1) = i
                                   vel%mat(ipos) = vel%mat(ipos)/ &
-                                                max(eval(ja), sign(1.00,eval(ja))*1d-2) &
-                                                *33.35641 * (15.633302)**2 / 2
+                                                max(2*abs(eval(ja)), 1d-3) &
+                                                *33.35641 * (15.633302)**2 * 10**2 &
+                                                *2*3.141592653589793 
                                   call h5sselect_elements_f(memspace,H5S_SELECT_APPEND_F,&
                                          1,ONE_, ipos, hdf5_error)
                                   call h5sselect_elements_f(dataspace_id, &
