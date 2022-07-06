@@ -221,7 +221,8 @@ class moire_phonon_utils():
                           q_grid_file = None,
                           width = 1e-4, #eV
                           full_q_grid_file=None,
-                          output_file='dos.dat'):
+                          output_file='dos.dat',
+                          func = None):
         """
             Computes the density of states of a system
         """
@@ -245,6 +246,14 @@ class moire_phonon_utils():
             grid, mapping = self.read_full_grid(mesh, full_q_grid_file)
             
             Freq = np.empty((len(np.unique(mapping)),nbands))
+            
+            if func is None:
+                func = np.ones(np.shape(Freq),dtype=np.float64)
+            elif func.shape!=Freq.shape:
+                if rank==0:
+                    print("Wrong size for the array func",flush=True)
+                exit()
+
             data = h5py.File(data_file,'r')
             counter = 0
             for group in data.keys():
@@ -285,7 +294,6 @@ class moire_phonon_utils():
             del up
 
             loc_tri = distribute(triangles_reduced, rank, size)
-            func = np.ones(np.shape(Freq),dtype=np.float64)
             
             dos_loc, nd_loc = bzi.linear_triangulation(nbands, loc_tri, len(E), E,
                                                        Freq, func, rank) 

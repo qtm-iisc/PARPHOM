@@ -3,7 +3,7 @@
 # ---------------------------------------------------
 
 
-lammps file location         : ./
+lammps file location         : /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tbmos2_38.2
 lammps file name             : lammps.dat
 natom                        : 42
 atom types                   : 6
@@ -12,15 +12,12 @@ atom style                   : atomic
 
 q file location              : ./
 q file name                  : qpt_bands_KKp.dat
-nqpt                         : 181
+nqpt                         : 201
 
 
-force constant file location : ./
-force constant file name     : FC_hdf5
+force constant file location : /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tbmos2_38.2
+force constant file name     : FORCE_CONSTANTS
 force constant dataset       : force_constants
-
-
-num qpools                   : 3
 
 
 compute eigvecs              : yes
@@ -30,10 +27,13 @@ max eigval                   : 100
 min index                    : 13
 max index                    : 16
 
-mb                           : 32
-nb                           : 32
+group velocity               : yes
+velocity method              : a
+
+mb                           : 16
+nb                           : 16
 abstol                       : 1E-16
 orfac                        : 1E-16
 
-output file name             : phbands_21.8_mos2_KKp
+output file name             : phbands_38.2_mos2_KKp
 output_file_location         : ./
