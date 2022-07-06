@@ -22,9 +22,6 @@ force constant file name     : FORCE_CONSTANTS
 force constant dataset       : force_constants
 
 
-num qpools                   : 3
-
-
 compute eigvecs              : yes
 
 range                        : A       
@@ -43,3 +40,4 @@ orfac                        : 1E-14
 
 output file name             : phbands_21.8_fine
 output_file_location         : ./ #/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/Phonopy_Comparision
+print progress               : no

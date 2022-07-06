@@ -121,24 +121,26 @@ subroutine read_force_constants()
     call h5close_f(hdf5_error)
 
 #ifdef __DEBUG
-!    write(debug_str,'(A)') "The local force constant elements in each rank are: "
-!    call debug_output(0)
-!    do i=1,mpi_global%size_
-!        write(format_, '(A,I0,A)') '(A,I0,A,',force_const%size_,'F12.6)'
-!        if (mpi_global%rank==i-1) then
-!            write(*,format_) "Rank :", mpi_global%rank, &
-!                             "\r\nForce Constant : \r\n", (force_const%mat(j), &
-!                             j=1,force_const%size_)
-!        end if
-!        call mpi_barrier(mpi_global%comm, mpierr)
-!    end do
-!    call mpi_barrier(mpi_global%comm, mpierr)
-
+    write(debug_str,'(A)') "The local force constant elements in each rank are: "
+    call debug_output(0)
+    do i=1,mpi_global%size_
+        write(format_, '(A,I0,A)') '(A,I0,A,',force_const%size_,'F12.6)'
+        if (mpi_global%rank==i-1) then
+            write(*,format_) "Rank :", mpi_global%rank, &
+                             "\r\nForce Constant : \r\n", (force_const%mat(j), &
+                             j=1,force_const%size_)
+        end if
+        call mpi_barrier(mpi_global%comm, mpierr)
+    end do
+    call mpi_barrier(mpi_global%comm, mpierr)
 #endif
 
 
-    write(done_line, "(A)") "Force constants read on "
-    call date_time_message(trim(done_line))
+    if (print_progress) then
+        write(done_line, "(A)") "Force constants read on "
+        call date_time_message(trim(done_line))
+    end if
+    
     call pdgeadd('T', 3*moire%natom, 3*moire%natom, &
                   alpha, force_const%mat, 1, 1, force_const%desca, &
                   alpha, force_const%mat, 1, 1, force_const%desca)
@@ -159,10 +161,10 @@ subroutine read_force_constants()
 
 #endif
 
-
-    write(done_line, "(A)") "Force constants symmetrized on " 
-    call date_time_message(trim(done_line))
-
+    if (print_progress) then
+        write(done_line, "(A)") "Force constants symmetrized on " 
+        call date_time_message(trim(done_line))
+    end  if
     return
 
 end subroutine

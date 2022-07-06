@@ -118,10 +118,12 @@ subroutine write_output(q_indx)
     call h5pclose_f(plist_id, hdf5_error)
     call h5fclose_f(file_id, hdf5_error)
     
-    write(done_line,"(I0,3A)") pzheevx_vars%comp_num_eval, " eigenvalues written to ", &
-                              trim(adjustl(file_name)), " on "
+    if (print_progress) then
+        write(done_line,"(I0,3A)") pzheevx_vars%comp_num_eval, " eigenvalues written to ", &
+                                  trim(adjustl(file_name)), " on "
     
-    call date_time_message(trim(done_line))
+        call date_time_message(trim(done_line))
+    end if
 
     ! --------------------------
     ! Store Eigenvectors
@@ -249,9 +251,6 @@ subroutine write_output(q_indx)
             
             allocate(temp(evec%size_))
             temp = real(evec%mat)
-            !call h5dwrite_f(dset_id, H5T_IEEE_F64LE, temp, &
-            !                dim_evec, hdf5_error, mem_space_id = &
-            !                memspace, file_space_id = dataspace_id, xfer_prp=dlist_id) 
             call h5dwrite_f(dset_id, dtr_id, temp, &
                             dim_evec, hdf5_error, mem_space_id = &
                             memspace, file_space_id = dataspace_id, xfer_prp=dlist_id) 
@@ -270,9 +269,11 @@ subroutine write_output(q_indx)
             call h5fclose_f(file_id, hdf5_error)
         end if
         call mpi_comm_free(write_comm, mpierr)
-        write(done_line,"(I0,3A)") pzheevx_vars%comp_num_evec, " eigenvectors written to ", &
-                                      trim(adjustl(file_name)), " on "
-        call date_time_message(trim(done_line))
+        if (print_progress) then
+            write(done_line,"(I0,3A)") pzheevx_vars%comp_num_evec," eigenvectors written to ",&
+                                          trim(adjustl(file_name)), " on "
+            call date_time_message(trim(done_line))
+        end if
     end if
     
 
@@ -439,9 +440,12 @@ subroutine write_output(q_indx)
             call h5pclose_f(plist_id, hdf5_error)
             call h5fclose_f(file_id, hdf5_error)
         end if
-        call mpi_comm_free(write_comm, mpierr) 
-        write(done_line,"(3A)") "Group velocities written to ",trim(adjustl(file_name))," on "
-        call date_time_message(trim(done_line))
+        call mpi_comm_free(write_comm, mpierr)
+        if (print_progress) then 
+            write(done_line,"(3A)") "Group velocities written to ",trim(adjustl(file_name)),&
+                                    " on "
+            call date_time_message(trim(done_line))
+        end if
     end if
 
     call mpi_barrier(mpi_global%comm, mpierr)

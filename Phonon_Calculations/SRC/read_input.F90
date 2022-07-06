@@ -190,6 +190,24 @@ subroutine read_input()
                     write(output_file_name,'(A)') trim(adjustl(args_(2)))
                 case ("OUTPUT FILE LOCATION", "OUTPUT_FILE_LOCATION")
                     write(output_file_location,'(A)') trim(adjustl(args_(2)))
+                case ("PRINT PROGRESS","PRINT_PROGRESS")
+                    args_(2) = trim(adjustl(args_(2)))
+                    if (args_(2) == 'yes' .or. args_(2) == 'true' .or. &
+                        args_(2) == 'Yes' .or. args_(2) == 'True' .or. &
+                        args_(2) == 'YES' .or. args_(2) == 'TRUE') then
+                        print_progress = .true.
+                    elseif (args_(2) == 'no' .or. args_(2) == 'false' .or. &
+                            args_(2) == 'No' .or. args_(2) == 'False' .or. &
+                            args_(2) == 'NO' .or. args_(2) == 'FALSE') then
+                        print_progress = .false.
+                    else
+                        write(err_msg, '(3A)') "Could not interpret command ", &
+                                               args_(2), &
+                                               "\r\nProgress will be printed."
+                        call error_message()
+                        print_progress = .true.
+                    end if
+
                 case default
                     write(err_msg, '(3A)') "\r\n%%%%%\r\nCommand ", trim(args_(1)), " not recognised"
                     call error_message()
@@ -271,6 +289,8 @@ subroutine read_input()
     call debug_output(0)
     write(debug_str, '(2A)') "Output file location : ", trim(output_file_location)
     call debug_output(0)
+    write(debug_str, '(A,L)') "Print Progress of calculations: ", print_progress
+    call debug_output(0)
     debug_str = '\r\n========================================================='
     call debug_output(0)
 
@@ -319,6 +339,7 @@ subroutine default_variables()
     q_file%finish = 1
     evec_comp = .false.
     comp_vel = .false.
+    print_progress = .true.
     vel_method = 'A'
     pzheevx_vars%comp_evec = 'N'
     pzheevx_vars%range_ = 'A'

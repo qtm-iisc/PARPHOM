@@ -125,7 +125,7 @@ subroutine create_dynamical_matrix(q_indx, derivative)
 #endif
 
 
-
+    if (print_progress) then
 #ifdef __QPOOL    
     call mpi_barrier(mpi_local%comm, mpierr)
     write(debug_str,'(A,I0,A)') "Dynamical Matrix created for q-pt no.", q_indx ," on "
@@ -136,6 +136,7 @@ subroutine create_dynamical_matrix(q_indx, derivative)
     if (derivative==0) then
         write(debug_str,'(A,I0,A)') "Dynamical Matrix created for q-pt no. ", q_indx, " on "
         call date_time_message(trim(debug_str))
+    end if
     end if
 #endif
 

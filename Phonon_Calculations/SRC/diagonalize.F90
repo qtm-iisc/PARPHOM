@@ -93,7 +93,8 @@ subroutine diagonalize_dynamical_matrix()
     deallocate(gap)
     deallocate(ifail)
     deallocate(iclustr)
-
+    
+    if (print_progress) then
 #ifdef __QPOOL
     write(done_line,"(A,I0,A)") "Diagonalization completed in group : ",mpi_local%color,&
                                    " on "
@@ -102,5 +103,6 @@ subroutine diagonalize_dynamical_matrix()
     write(done_line, "(A,I0,A)") "Diagonalization completed on "
     call date_time_message(trim(done_line))  
 #endif
+    end if
 
 end subroutine
