@@ -37,7 +37,8 @@ class finite_temperature():
         self.mass = mass
         self.temperature = temperature
         self.kbt = 8.6173303/(10**2) * temperature
-    
+        self.traj_file = None
+
     def set_traj_file(self,traj_file):
         """
             Set the trajectory file.
@@ -138,7 +139,7 @@ class finite_temperature():
 
 
 
-    def dos(self,output_file="dos.dat"):
+    def density_of_states(self,gauss_smear=self.total_time_steps/10,output_file="dos.dat"):
         
         """
             Compute the density of states via the fourier transform of the 
@@ -148,12 +149,19 @@ class finite_temperature():
         """
 
         from scipy.fft import fft,fftshift,fftfreq, next_fast_len
+        from scipy import signal
         
         world_comm = MPI.COMM_WORLD
         world_rank = world_comm.Get_rank()
         world_size = world_comm.Get_size()
 
-        dos = np.zeros((self.total_time_steps,),dtype=float)
+        if self.traj_file is None:
+            if rank==0:
+                print("Error Trajectory file not set",flush=True)
+            exit()
+
+        optimal_len = next_fast_len(self.total_time_steps)
+        dos = np.zeros((optimal_len,),dtype=float)
 
         if world_size >= self.num_at_types:
             ngroups = self.num_at_types
@@ -175,26 +183,87 @@ class finite_temperature():
 
         traj_handle = h5py.File(self.traj_file,'r')
 
+        broadening = signal.windows.gaussian(self.total_time_steps,std=gauss_smear)
+
+
         for at_type in local_at_type:
             for n in local_natom_group:
-                v = traj_handle['velocity_%s'%at_type][:self.total_time_steps,n,:]
+                v = traj_handle['velocity_%s'%at_type][n,:self.total_time_steps,:]
                 for j in range(3):
-                    autocorr_w = np.abs(fft(v[:,j])**2).real
-                    autocorr_w /= autocorr_w[0]
+                    autocorr_w = np.abs(fft(v[:,j]*broadening,optimal_len)**2).real
                     dos += autocorr_w*self.mass[self.at_types.index(at_type)]
+                if world_rank==0:
+                    printProgressBar(n+1,len(local_natom)," calculations completed")
         
         world_comm.Barrier()
         world_comm.allreduce(dos, op=MPI.SUM)
         group_comm.Free()
 
         if world_rank==0:
-            dos /= 3*self.kbt*self.natom*self.num_at_types
-            omega = fftshift(np.arange(-self.total_time_steps//2,
-                                        self.total_time_steps//2,dtype=float))
+            dos /= 3*self.kbt*self.natom*self.num_at_types*10**6
+            omega = fftshift(np.arange(-optimal_len//2,
+                                        optimal_len//2,dtype=float))
             omega *= 33.356*1000/(self.delta_time*(self.total_time_steps-1))
             f = open(output_file,'w')
             for i in range(self.total_time_steps):
                 f.write("%f\t%f\n"%(omega[i],dos[i]))
             f.close()
         
+        return
+
+
+
+
+    def write_vqt_file(self, q_pt):
+        """
+            Writes the v_q(t) file for computation for MVACF
+        """
+        world_comm = MPI.COMM_WORLD
+        world_rank = world_comm.Get_rank()
+        world_size = world_comm.Get_size()
+
+        if self.traj_file is None:
+            if rank==0:
+                print("Error Trajectory file not set",flush=True)
+            exit()
+        
+        f = h5py.File(self.traj_file,'r')
+        groups = list(f.keys())
+        
+        if world_size >= self.num_at_types:
+            ngroups = self.num_at_types
+        else:
+            ngroups = world_size
+
+        color, key = get_color_and_keys(world_rank, world_size, ngroups)
+        local_comm = world_comm.Split(color,key)
+        local_rank = local_comm.Get_rank()
+        local_size = local_comm.Get_size()
+
+        local_atom_type = distribute(at_types,color,len(self.at_types))
+
+        time_step = [i for i in range(self.total_time_steps)]
+        loc_time = distribute(time_step,local_rank,local_size)
+        loc_time = np.array(loc_time)
+        v_q_t = np.zeros((self.total_time_steps,len(self.at_types),3),dtype=complex)
+
+        for atyp in local_atom_type:
+            for t in loc_time:
+                vt = f['velocity_%s'%atyp][t]
+                rt = f['position_%s'%atyp][t]
+                ert = np.exp(-1j*q*rt)
+                v_q_t[t,at_types.index(atyp)] = np.sum(vt*ert,axis=0)
+                if world_rank==0:
+                    printProgressBar(t,loc_time[-1]," of data written")
+        
+        world_comm.Barrier()
+        v_q_t = world_comm.allreduce(v_q_t,op=MPI.SUM)
+        f.close()
+        if world_rank==0:
+            g = h5py.File("v_q_t",'w')
+            dset = g.create_dataset("v_q_t",data=v_q_t,dtype=complex,
+                                    compression="gzip",compression_opts=9)
+            g.close()
+            print("Finished")
+
         return

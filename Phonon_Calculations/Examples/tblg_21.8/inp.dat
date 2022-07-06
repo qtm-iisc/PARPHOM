@@ -40,4 +40,4 @@ orfac                        : 1E-14
 
 output file name             : phbands_21.8_fine
 output_file_location         : ./ #/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/Phonopy_Comparision
-print progress               : no
+print progress               : yes
