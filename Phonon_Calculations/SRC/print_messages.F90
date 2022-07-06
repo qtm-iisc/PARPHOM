@@ -1,3 +1,26 @@
+subroutine print_start_logo()
+    use global_variables
+    implicit none
+    if (mpi_global%rank == 0) then
+        write(6,*) " "
+        write(6,*) " "
+        write(6,'(A)')" ██████╗░░█████╗░██████╗░░█████╗░██████╗░██╗░░██╗░█████╗░░██████╗"
+        write(6,'(A)')" ██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║░░██║██╔══██╗██╔════╝"
+        write(6,'(A)')" ██████╔╝███████║██████╔╝███████║██████╔╝███████║██║░░██║╚█████╗░"
+        write(6,'(A)')" ██╔═══╝░██╔══██║██╔══██╗██╔══██║██╔═══╝░██╔══██║██║░░██║░╚═══██╗"
+        write(6,'(A)')" ██║░░░░░██║░░██║██║░░██║██║░░██║██║░░░░░██║░░██║╚█████╔╝██████╔╝"
+        write(6,'(A)')" ╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░░░░╚═╝░░╚═╝░╚════╝░╚═════╝░"
+        write(6,*) " "
+        write(6,*) " "
+        write(6,'(A)') "               Phonon Spectrum Calculator v1.0"
+        write(6,*) " "
+        write(6,*) " "
+        write(6,'(A)') "        S. Mandal, I.Maity, H R Krishnamurthy, M. Jain"
+        write(6,*) " "
+    end if
+end subroutine
+
+
 subroutine debug_output(code)
     use global_variables
     implicit none

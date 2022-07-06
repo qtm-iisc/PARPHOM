@@ -230,7 +230,8 @@ class moire_phonon_utils():
         
         from bz_integration import bz_integration as bzi
         from mpi4py import MPI
-        
+        from pyphutil.progress import printProgressBar
+
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()  
         size = comm.Get_size()
@@ -276,8 +277,13 @@ class moire_phonon_utils():
                 local_triangles_reduced.append([up.index(mapping[local_triangles[i][0]]), \
                                                 up.index(mapping[local_triangles[i][1]]), \
                                                 up.index(mapping[local_triangles[i][2]])])
-                print("Rank %d appended %d/%d triangles."%(rank,i+1,len(local_triangles)),flush=True)
+                if rank==0:
+                    printProgressBar(i+1,len(local_triangles)," of triangles processed")
+                #print("Rank %d appended %d/%d triangles."%(rank,i+1,len(local_triangles)),flush=True)
             comm.Barrier()
+            
+            if rank==0:
+                print("\nStarting DOS calculations",flush=True)
 
             triangles_reduced = []
             triangles_reduced = comm.gather(local_triangles_reduced, root=0)
@@ -313,7 +319,7 @@ class moire_phonon_utils():
                 f.close()
                 print("\nWritten DOS and Number density to %s"%(output_file), flush=True)
         
-        else: 
+        elif (method=='gaussian') or (method=='lorentzian'): 
             if method=='gaussian':
                 mm = 1    
             elif method=='lorentzian':
@@ -340,6 +346,15 @@ class moire_phonon_utils():
                     f.writelines("%f\t\t%f\n"%(E[i],DOS[i]))
                 f.close()
                 print("\nWritten DOS to %s"%(output_file), flush=True)
+        else:
+            if rank==0:
+                print("Method not recognised",flush=True)
+                print("Recognised methods are: ",flush=True)
+                print(" 1. linear_triangulation",flush=True)
+                print(" 2. gaussian",flush=True)
+                print(" 3. lorentzian",flush=True)
+                print(" ")
+            exit()
             
         return    
 

@@ -19,9 +19,9 @@ utils.density_of_states(mesh,
                         nbands, 
                         en_range, 
                         en_spacing, 
-                        method='gaussian',
+                        method='linear_triangulation',
                         q_grid_file = '/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/tblg_21.8/dos_21.8_15X15.dat',
                         full_q_grid_file = '/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/tblg_21.8/full_grid_15X15' ,
                         output_file='dos_15X15_gauss.data',
-                        func =None,
-                        width=44.47557733333333)
+                        func =None)#,
+                        #width=44.47557733333333)

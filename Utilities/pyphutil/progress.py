@@ -5,14 +5,12 @@
 """
 import sys
 
-def printProgressBar(i,m,postText):
+def printProgressBar(i,m,postText,n_bar=20):
     """
         Prints progress of the calculations
     """
-    n_bar = 50
     j=i/m
     sys.stdout.write('\r')
-    sys.stdout.write(f"[{'=' * int(n_bar * j):{n_bar}s}] {int(100 * j)}%  {postText}")
+    sys.stdout.write(f" {'█' * int(n_bar * j):{n_bar}s} {int(100 * j)}% {postText}")
     sys.stdout.flush()
-    
     return

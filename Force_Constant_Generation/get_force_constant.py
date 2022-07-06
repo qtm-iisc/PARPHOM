@@ -34,11 +34,11 @@ from lammps import lammps
 import h5py
 import argparse
 from time import time
-
-
+import sys
+import os
 
 def parseOptions(comm):
-    parser = argparse.ArgumentParser(description='Print some messages.')
+    parser = argparse.ArgumentParser(description=print_logo(comm))
 
     parser.add_argument("-i","--input", help='Input File', type=str)
     parser.add_argument("-o","--output", help='Output File',
@@ -50,7 +50,7 @@ def parseOptions(comm):
                         default=False,action="store_true")
     parser.add_argument("-t","--iterations",help="Number of iterations to symmetrize",
                         nargs=argparse.OPTIONAL,default=20,type=int)
-    parser.add_argument("-r","--replicate",help="Replicate the cell",
+    parser.add_argument("-r","--replicate",help="Replicate the cell in x, y and z directions. Sample input: '-r 2 3 5'  replicates the cell to create a (2,3,5) supercell. Default is 1 1 1'",
                         nargs=3,type=int,default=[1,1,1])
     args = None
     try:
@@ -64,6 +64,17 @@ def parseOptions(comm):
     return args
 
 
+
+def printProgressBar(i,m,postText,n_bar=20):
+    """
+        Prints progress of the calculations
+    """
+    j=i/m
+    sys.stdout.write('\r')
+    sys.stdout.write(f" {'█' * int(n_bar * j):{n_bar}s} {int(100 * j)}% {postText}")
+    sys.stdout.flush()
+    
+    return
 
 
 def get_structure_from_lammps(lammps_input_file,show_log=False):
@@ -233,7 +244,8 @@ def symmetrize_fc(fc_file,comm,local_atoms,natom,no_of_iterations):
         acoustic_sum_rule(data,local_atoms)
         inversion_symmetry(data,local_atoms,natom)
         if comm.rank==0:
-            print("Symmetry iteration %6d/%d completed"%(i+1, no_of_iterations),flush=True)
+            printProgressBar(i+1,no_of_iterations," symmetrization completed")
+            #print("Symmetry iteration %6d/%d completed"%(i+1, no_of_iterations),flush=True)
     f.close()
     return
 
@@ -291,14 +303,44 @@ def p2s_map(lat,lammps_input_file, replicate,natom,crys):
 
 
 
+
+def print_logo(comm):
+    r = comm.Get_rank()
+    if r == 0:
+        print(" ")
+        print(" ")
+        print("\t██████╗░░█████╗░██████╗░░█████╗░██████╗░██╗░░██╗░█████╗░░██████╗",flush=True)
+        print("\t██╔══██╗██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║░░██║██╔══██╗██╔════╝",flush=True)
+        print("\t██████╔╝███████║██████╔╝███████║██████╔╝███████║██║░░██║╚█████╗░",flush=True)
+        print("\t██╔═══╝░██╔══██║██╔══██╗██╔══██║██╔═══╝░██╔══██║██║░░██║░╚═══██╗",flush=True)
+        print("\t██║░░░░░██║░░██║██║░░██║██║░░██║██║░░░░░██║░░██║╚█████╔╝██████╔╝",flush=True)
+        print("\t╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░░░░╚═╝░░╚═╝░╚════╝░╚═════╝░",flush=True)
+        print(" ", flush=True)
+        print(" ", flush=True)
+        print("\t\t\tForce Constant Generator v1.0",flush=True)
+        print(" ", flush=True)
+        print(" ", flush=True)
+        print("\t\tS. Mandal, I. Maity, H. R. Krishnamurthy, M. Jain",flush=True)
+        print(" ", flush=True)
+        print(" ", flush=True)
+    return
+
+
+
+
+
 def main():
+
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
+    
     st = time()
     args = parseOptions(comm)
     args.replicate = np.array(args.replicate)
     
+    comm.Barrier()
+
     lammps_input_file = args.input
     na, lat, type_mass, at_types, masses, positions, crys = get_structure_from_lammps(lammps_input_file)
     na_replicated = na*np.prod(args.replicate)
@@ -321,16 +363,17 @@ def main():
         for beta in range(3):
             fc = get_force_constant(lammps_input_file,args.displacement,j,beta,args.replicate)
             dset[j,:,beta] = np.array(fc,dtype='f')
-        print("Rank %d finished displacing atom %d/%d"%(rank, j+1, local_atoms[len(local_atoms)-1]+1),flush=True)
+        if rank==0:
+            printProgressBar(j+1,len(local_atoms),"force constant generation completed")
     f.close()
     if rank==0: 
-        print("Force constant generated and written in %.3f sec"%(time()-st), flush=True)
+        print("\n\nForce constant generated and written in %.3f sec\n"%(time()-st), flush=True)
     comm.Barrier()
     st = time()
     if args.symmetrize:
         symmetrize_fc(args.output,comm,local_atoms,na_replicated,args.iterations)
         if rank==0:
-            print("Symmetrization finished in %.3f sec"%(time()-st),flush=True)
+            print("\n\nSymmetrization finished in %.3f sec\n"%(time()-st),flush=True)
     return
 
 

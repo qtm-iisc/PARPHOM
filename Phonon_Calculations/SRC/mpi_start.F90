@@ -18,6 +18,8 @@ subroutine initialize_mpi()
         call exit
     end if
     
+    call print_start_logo()
+
     write(start_msg,'(A,I0,A)') "Program started with ", mpi_global%size_," MPI processes on "
     call date_time_message(trim(adjustl(start_msg)))
 
