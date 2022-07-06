@@ -21,15 +21,11 @@ subroutine allocate_distributed_arrays()
     force_const%size_ = force_const%lld*force_const%locq
     allocate(force_const%mat(force_const%size_))
 
-    if (print_progress) then
-        write(debug_str,'(A)') "Force Constant Matrix Allocated"
-        call debug_output(0)
-    end if
-
-
     call descinit(force_const%desca, 3*moire%natom, 3*moire%natom, pzheevx_vars%mb, &
                   pzheevx_vars%nb, rsrc, csrc, grid%context, force_const%lld, info)
 #ifdef __DEBUG
+    write(debug_str,'(A)') "Force Constant Matrix Allocated"
+    call debug_output(0)
     write(debug_str,'(A)') "\r\nForce Constant Parameters: "
     call debug_output(0)
     call mpi_barrier(mpi_global%comm, mpierr)
@@ -82,15 +78,13 @@ subroutine allocate_distributed_arrays()
     dyn_mat%size_ = dyn_mat%locq*dyn_mat%lld
 
     allocate(dyn_mat%mat(dyn_mat%size_))
-    if (print_progress) then
-        write(debug_str,'(A)') "Dynamical Matrix Allocated"
-        call debug_output(0)
-    end if
 
     call descinit(dyn_mat%desca, 3*moire%natom, 3*moire%natom, pzheevx_vars%mb, &
                   pzheevx_vars%nb, rsrc, csrc, grid%context, dyn_mat%lld, info)
 
 #ifdef __DEBUG
+    write(debug_str,'(A)') "Dynamical Matrix Allocated"
+    call debug_output(0)
     write(debug_str,'(A)') "\r\nDynamical Matrix Parameters: "
     call debug_output(0)
     call mpi_barrier(mpi_global%comm, mpierr)
@@ -144,12 +138,10 @@ subroutine allocate_distributed_arrays()
     
     if (pzheevx_vars%comp_evec=='V') then
         allocate(evec%mat(evec%size_))
-        if (print_progress) then
-            write(debug_str,'(A)') "Eigenvectors Allocated"
-            call debug_output(0)
-        end if
 
 #ifdef __DEBUG
+    write(debug_str,'(A)') "Eigenvectors Allocated"
+    call debug_output(0)
     write(debug_str,'(A)') "\r\nEigenvector Parameters: "
     call debug_output(0)
     call mpi_barrier(mpi_global%comm, mpierr)
@@ -197,11 +189,10 @@ subroutine allocate_distributed_arrays()
 
     
     allocate(eval(3*moire%natom))
-    if (print_progress) then
-        write(debug_str,'(A)') "Eigenvalue Allocated"
-        call debug_output(0)
-    end if
-
+#ifdef __DEBUG
+    write(debug_str,'(A)') "Eigenvalue Allocated"
+    call debug_output(0)
+#endif
 
     if (comp_vel) then
         vel%locq = numroc(3*moire%natom, pzheevx_vars%mb, grid%mypcol, csrc, grid%npcol)
@@ -213,11 +204,9 @@ subroutine allocate_distributed_arrays()
         call descinit(vel%desca, 3*moire%natom, 3*moire%natom, pzheevx_vars%mb, &
                       pzheevx_vars%nb, rsrc, csrc, grid%context, vel%lld, info)
         allocate(vel%mat(vel%size_))
-        if (print_progress) then
-            write(debug_str,'(A)') "Group Velocity Matrix Allocated"
-            call debug_output(0)
-        end if
 #ifdef __DEBUG
+        write(debug_str,'(A)') "Group Velocity Matrix Allocated"
+        call debug_output(0)
         write(debug_str,'(A)') "\r\nGroup Velocity Matrix Parameters: "
         call debug_output(0)
         call mpi_barrier(mpi_global%comm, mpierr)
