@@ -8,7 +8,9 @@ from pyphutil.distribute_lists import distribute, get_color_and_keys
 from pyphutil.progress import printProgressBar
 import h5py
 import matplotlib.pyplot as plt
-
+from mpi4py import MPI
+import os
+import glob
 
 class finite_temperature():
     """
@@ -99,8 +101,8 @@ class finite_temperature():
                 fposname = location+at_type+'pos.%d'%(i+1)
                 fvelname = location+at_type+'vel.%d'%(i+1)
                 if rank==0:
-                    os.system('split -l %d -a 3 -d %s %s'%(self.natom+9,fposname,split_prefix_pos))
-                    os.system('split -l %d -a 3 -d %s %s'%(self.natom+9,fvelname,split_prefix_vel))
+                    os.system('split -l %d -a 8 -d %s %s'%(self.natom+9,fposname,split_prefix_pos))
+                    os.system('split -l %d -a 8 -d %s %s'%(self.natom+9,fvelname,split_prefix_vel))
                 comm.Barrier()
                 a = len(glob.glob1('./',"%s*"%split_prefix_pos))
                 if rank==0:
@@ -139,7 +141,7 @@ class finite_temperature():
 
 
 
-    def density_of_states(self,gauss_smear=self.total_time_steps/10,output_file="dos.dat"):
+    def density_of_states(self,gauss_smear,output_file="dos.dat"):
         
         """
             Compute the density of states via the fourier transform of the 
@@ -214,7 +216,7 @@ class finite_temperature():
 
 
 
-    def write_vqt_file(self, q_pt):
+    def write_vqt_file(self, q_pt, output_file="v_q_t"):
         """
             Writes the v_q(t) file for computation for MVACF
         """
@@ -240,19 +242,19 @@ class finite_temperature():
         local_rank = local_comm.Get_rank()
         local_size = local_comm.Get_size()
 
-        local_atom_type = distribute(at_types,color,len(self.at_types))
+        local_atom_type = distribute(self.at_types,color,self.num_at_types)
 
         time_step = [i for i in range(self.total_time_steps)]
         loc_time = distribute(time_step,local_rank,local_size)
         loc_time = np.array(loc_time)
-        v_q_t = np.zeros((self.total_time_steps,len(self.at_types),3),dtype=complex)
+        v_q_t = np.zeros((self.total_time_steps,self.num_at_types,3),dtype=complex)
 
         for atyp in local_atom_type:
             for t in loc_time:
                 vt = f['velocity_%s'%atyp][t]
                 rt = f['position_%s'%atyp][t]
-                ert = np.exp(-1j*q*rt)
-                v_q_t[t,at_types.index(atyp)] = np.sum(vt*ert,axis=0)
+                ert = np.exp(-1j*q_pt*rt)
+                v_q_t[t,self.at_types.index(atyp)] = np.sum(vt*ert,axis=0)
                 if world_rank==0:
                     printProgressBar(t,loc_time[-1]," of data written")
         
@@ -260,7 +262,7 @@ class finite_temperature():
         v_q_t = world_comm.allreduce(v_q_t,op=MPI.SUM)
         f.close()
         if world_rank==0:
-            g = h5py.File("v_q_t",'w')
+            g = h5py.File(output_file,'w')
             dset = g.create_dataset("v_q_t",data=v_q_t,dtype=complex,
                                     compression="gzip",compression_opts=9)
             g.close()
