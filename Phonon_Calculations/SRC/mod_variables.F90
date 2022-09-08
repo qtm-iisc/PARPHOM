@@ -60,7 +60,7 @@ module global_variables
     type(bz_points) :: q_file
     type(system) :: moire
     type(fc) :: force_const
-    type(comparr) :: dyn_mat, evec, vel
+    type(comparr), target :: dyn_mat, evec, vel
     logical :: evec_comp, comp_vel, print_progress
     character(len=1) :: vel_method
     double precision, allocatable, dimension(:) :: eval

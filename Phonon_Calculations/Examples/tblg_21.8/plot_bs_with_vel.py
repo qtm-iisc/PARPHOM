@@ -18,7 +18,7 @@ label = [r'$\mathbf{\Gamma}$', r'$\mathbf{M}$', r'$\mathbf{K}$', r'$\mathbf{\Gam
 
 
 #f = h5py.File('phbands_21.8.hdf5','r')
-f = h5py.File('phbands_21.8_fine.hdf5','r')
+f = h5py.File('phbands_21.8_fine_v1.hdf5','r')
 g = list(f.keys())
 
 eigval, vel = [], []
@@ -41,7 +41,7 @@ v = np.linalg.norm(vel,axis=2)
 v_max = np.max(v)
 for i in range(eigval.shape[1]):
     plt.plot(x,eigval[:,i],c='b',alpha=0.4,zorder=1)
-    plt.scatter(x,eigval[:,i],c=v[:,i],cmap='magma_r',vmin=0,vmax=v_max,
+    plt.scatter(x,eigval[:,i],c=v[:,i]/1000,cmap='Reds',vmin=0,vmax=v_max/1000,
                 s=v[:,i]*5/1000,zorder=2)
 
 np.set_printoptions(precision=3,suppress=True)
@@ -50,13 +50,13 @@ print(v[2])
 for n in range(len(nodes)):
     plt.axvline(x=nodes[n],linewidth=1,color='k')
 plt.axhline(y=0,linewidth=1,color='k')
-plt.ylim(-1,600)
+#plt.ylim(-1,600)
 plt.xlim(nodes[0],nodes[len(nodes)-1])
 plt.ylabel(r"Energy (cm$^{-1}$)",size=20)
 plt.xticks(nodes,label,fontsize=22)
 plt.tick_params(axis='both',labelsize=20)
 cbar = plt.colorbar()
-cbar.set_label('Velocity (m/s)',fontsize=18,rotation=270,labelpad=25)
+cbar.set_label('Velocity (km/s)',fontsize=18,rotation=270,labelpad=25)
 for t in cbar.ax.get_yticklabels():
      t.set_fontsize(20)
 plt.tight_layout()

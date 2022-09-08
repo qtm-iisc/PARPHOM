@@ -1,0 +1,43 @@
+# ---------------------------------------------------
+# Input file for Phonon Calculations in Moire Systems
+# ---------------------------------------------------
+
+
+lammps file location         : ../../../Force_Constant_Generation/Examples/tblg_21.8
+lammps file name             : lammps.dat_tersoff
+natom                        : 28
+atom types                   : 1
+atom style                   : molecular
+
+
+q file location              : ./
+q file name                  : dos_21.8_15X15.dat 
+nqpt                         : 27
+
+
+force constant file location : ../../../Force_Constant_Generation/Examples/tblg_21.8
+force constant file name     : FORCE_CONSTANTS_TERSOFF
+force constant dataset       : force_constants
+
+
+num qpools                   : 3
+
+
+compute eigvecs              : no
+
+range                        : A       
+min eigval                   : -2.000
+max eigval                   : 100       
+min index                    : 13
+max index                    : 16
+
+group velocity               : no
+velocity method              : analytic
+
+mb                           : 8
+nb                           : 8
+abstol                       : 1E-16
+orfac                        : 1E-16
+
+output file name             : phbands_21.8_dos_15X15_tersoff
+output_file_location         : ./ #/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/Phonopy_Comparision

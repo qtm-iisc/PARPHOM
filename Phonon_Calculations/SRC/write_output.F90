@@ -450,7 +450,8 @@ subroutine write_output(q_indx)
 
     call mpi_barrier(mpi_global%comm, mpierr)
 
-    
+    call h5close_f(hdf5_error)
+
     return
 
 end subroutine
