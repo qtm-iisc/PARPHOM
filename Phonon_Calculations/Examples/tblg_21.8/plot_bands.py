@@ -2,9 +2,9 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
-fname = 'phbands_21.8_no_symm_v1.hdf5'
+fname = 'phbands_21.8_fine.hdf5'
 nbands = 28*3
-no_k_pts = 130
+no_k_pts = 300
 index_ = [i for i in range(no_k_pts)]
 
 data = h5py.File(fname, 'r')
