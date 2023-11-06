@@ -16,18 +16,20 @@ subroutine blacs_grid_initialization()
 
 #ifdef __QPOOL
 
-    ! With KPools
+    ! With QPools
     ! -----------
     !  
-    ! Split the processors in groups with each group handling a k-point
+    ! Split the processors in groups with each group handling a q-point
     ! The number of pools is taken as an input from the user : num_pools
     ! 
     ! mpi_local%color = group number (1,2, ...)
     ! mpi_local%key = rank of a process within the group
     ! 
+    ! NOTE: QPools are not properly implemented in v1.0
+    !
    
     if (num_pools.gt.mpi_global%size_) then
-        debug_str = 'Invalid k-pools. k-pools set at present is the value of Error code.'
+        debug_str = 'Invalid q-pools. q-pools set at present is the value of Error code.'
         call debug_output(num_pools)
         call close_mpi()
         call exit
@@ -140,7 +142,8 @@ subroutine blacs_grid_initialization()
 
 #else
 
-    ! No Kpools activated
+    ! -------------------------------
+    ! No Qpools activated
     !
     ! The processors are divided into a blacs grid of nprow*npcol
     ! Each processor is assigned an unique row index (myprow) and 

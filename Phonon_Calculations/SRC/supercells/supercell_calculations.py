@@ -2,6 +2,10 @@ import h5py
 import numpy as np
 
 
+"""
+    Not implemented properly yet
+"""
+
 class supercell_calculations():
 
     def __init__(self, lammps_input, fc_file, q_file):

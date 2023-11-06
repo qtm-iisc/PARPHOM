@@ -17,9 +17,9 @@ subroutine read_force_constants()
     integer(hid_t) :: dataspace, memspace
     integer(hsize_t), dimension(4,1) :: coord
     integer(hsize_t), dimension(1) :: coord_mem, data_dims
-    integer(size_t), parameter :: ONE_ = 1
+    integer(size_t), parameter :: ONE_ = 1D0
 
-    double precision, parameter :: alpha = 0.5
+    double precision, parameter :: alpha = 0.500000000000000
 
 #ifdef __DEBUG
     integer :: dataspace_npoints, memspace_npoints, i, j
