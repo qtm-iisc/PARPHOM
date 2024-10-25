@@ -2,7 +2,7 @@ from pyphutil.pyphutil import moire_phonon_utils
 import numpy as np
 
 fname = 'in.phonon'
-floc = '/home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tbwse2_2.0/'
+floc = '../../Force_Constant_Generation/Examples/tbwse2_2.0/'
 mesh = np.array([18,18,1])
 
 nbands = 4902*3

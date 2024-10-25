@@ -19,7 +19,7 @@ The prerequisites to run this code are:
 #### Step 1: 
 Prepare a LAMMPS input file
 #### Step 2:
-Make sure you have the serial LAMMPS python wrapper (the MPI python wrapper is not supported for now)
+Make sure you have the serial LAMMPS python wrapper (the MPI python wrapper is not supported for now). For instructions on how to install the LAMMPS serial python wrapper please refer to [the LAMMPS documentation](https://docs.lammps.org/Python_install.html)
 #### Step 3:
 Generate the force constant using 
 ```
@@ -100,7 +100,7 @@ output_file_location         :
 #### Step 4:  
 Run the code as 
 ```
-mpiexec -np <no. of cores> moire_phonons.x <input file>
+mpiexec -np <no. of cores> parphom.x <input file>
 ```
 
 

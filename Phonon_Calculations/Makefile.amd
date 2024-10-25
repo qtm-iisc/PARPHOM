@@ -6,7 +6,7 @@ MODOBJS=$(patsubst %.F90, %.o,$(MODS))
 SRCS=$(filter-out $(MODS), $(wildcard $(SRC_DIR)*.F90))
 OBJS=$(patsubst %.F90, %.o,$(SRCS))
 
-EXE = moire_phonons.x
+EXE = parphom.x
 
 FC = h5pfc
 

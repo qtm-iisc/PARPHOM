@@ -1,5 +1,5 @@
 #####################################
-# Required packages for pymelecutil #
+# Required packages for pyphutil #
 #####################################
 
 numpy>=1.21.2

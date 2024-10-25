@@ -2,7 +2,7 @@ from pyphutil.pyphutil import moire_phonon_utils
 import numpy as np
 
 fname = 'lammps.in'
-floc = '/home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tbmos2_38.2/'
+floc = '../../Force_Constant_Generation/Examples/tbmos2_38.2/'
 mesh = np.array([200,200,1])
 
 utils = moire_phonon_utils(lammps_input_file = floc+fname)

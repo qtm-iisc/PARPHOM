@@ -8,11 +8,11 @@ neighbor        0.3 bin
 #2 structure
 boundary        p p p
 box tilt        large
-read_data       /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tblg_21.8/lammps.dat_tersoff
+read_data       lammps.dat_tersoff
 
 #4 potentials
 pair_style      hybrid/overlay drip tersoff
 
 # Drip and Rebo between layer 1 & 2
-pair_coeff   * *  drip /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tblg_21.8/C.drip   C
-pair_coeff   * *  tersoff /home/mshinjan/Phonons/MoirePhonons/Force_Constant_Generation/Examples/tblg_21.8/BNC.tersoff  C
+pair_coeff   * *  drip C.drip   C
+pair_coeff   * *  tersoff BNC.tersoff  C

@@ -17,8 +17,8 @@ nodes = np.array([int(i) for i in nodes])
 label = [r'$\mathbf{\Gamma}$', r'$\mathbf{M}$', r'$\mathbf{K}$', r'$\mathbf{\Gamma}$']
 
 
-#f = h5py.File('phbands_21.8.hdf5','r')
-f = h5py.File('phbands_21.8_fine_v1.hdf5','r')
+f = h5py.File('phbands_21.8.hdf5','r')
+#f = h5py.File('phbands_21.8_fine_v1.hdf5','r')
 g = list(f.keys())
 
 eigval, vel = [], []

@@ -11,8 +11,6 @@ atom style                   : molecular
 
 
 q file location              : ./
-#q file name                  : qpt_bands.dat 
-#nqpt                         : 130
 q file name                  : q_points_band.dat 
 nqpt                         : 300
 
@@ -38,6 +36,6 @@ nb                           : 4
 abstol                       : 1E-14
 orfac                        : 1E-14
 
-output file name             : phbands_21.8_fine
-output_file_location         : ./ #/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/Phonopy_Comparision
+output file name             : phbands_21.8
+output_file_location         : ./ 
 print progress               : yes
