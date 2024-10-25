@@ -1,6 +1,6 @@
-# Moire Phonons
+# PARPHOM
 
-Code to calculate the phonon frequencies in Moire systems. 
+Package to calculate the phonon frequencies in moiré systems. 
 
 ## Prerequisites
 
@@ -109,4 +109,4 @@ mpiexec -np <no. of cores> parphom.x <input file>
 
 ## Known Issues
 
-Q-pools are not supported yet. Will be supported in v2.0
+q-pools are not supported yet. Will be supported in v2.0
