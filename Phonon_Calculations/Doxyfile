@@ -1,0 +1,64 @@
+# Doxyfile for PARPHOM Phonon Calculations
+
+# Project information
+PROJECT_NAME           = "PARPHOM"
+PROJECT_BRIEF         = "PARallel PHOnon calculator for Moiré systems"
+PROJECT_NUMBER        = "1.0"
+OUTPUT_DIRECTORY      = doc
+
+# Input files
+INPUT                 = ./SRC
+FILE_PATTERNS        = *.F90 *.f90
+RECURSIVE            = YES
+EXCLUDE_PATTERNS     = */build/* */CMakeFiles/*
+
+# Source browsing options
+SOURCE_BROWSER       = YES
+INLINE_SOURCES      = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION  = YES
+OPTIMIZE_FOR_FORTRAN = YES
+EXTENSION_MAPPING    = F90=FortranFree f90=FortranFree
+
+# Output formats
+GENERATE_HTML        = YES
+GENERATE_LATEX       = NO
+HTML_OUTPUT         = html
+HTML_FILE_EXTENSION = .html
+
+# HTML options
+SEARCHENGINE        = YES
+GENERATE_TREEVIEW   = YES
+
+# Documentation options
+EXTRACT_ALL         = YES
+EXTRACT_PRIVATE     = YES
+EXTRACT_STATIC      = YES
+CASE_SENSE_NAMES    = NO
+HIDE_SCOPE_NAMES    = NO
+SORT_MEMBER_DOCS    = YES
+WARN_IF_UNDOCUMENTED = YES
+WARN_NO_PARAMDOC    = YES
+
+# Preprocessor options
+ENABLE_PREPROCESSING = YES
+MACRO_EXPANSION     = YES
+EXPAND_ONLY_PREDEF  = NO
+SEARCH_INCLUDES     = YES
+
+# Dot tool options (for graphs)
+HAVE_DOT            = YES
+DOT_NUM_THREADS    = 0
+CLASS_GRAPH        = YES
+COLLABORATION_GRAPH = YES
+GROUP_GRAPHS       = YES
+INCLUDE_GRAPH      = YES
+INCLUDED_BY_GRAPH  = YES
+CALL_GRAPH         = YES
+CALLER_GRAPH       = YES
+
+# Other options
+QUIET              = NO
+WARNINGS           = YES
+WARN_IF_DOC_ERROR  = YES
+WARN_FORMAT        = "$file:$line: $text"
