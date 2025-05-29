@@ -1,4 +1,79 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+!> \file allocate_arrays.F90
+!> \brief Allocates distributed arrays for force constants, dynamical matrices, eigenvalues, eigenvectors, and group velocities.
+!> \details
+!> This subroutine sets up and allocates all distributed arrays required for phonon calculations using ScaLAPACK/BLACS grid.
+!> It initializes matrix descriptors, computes local array sizes, and allocates memory for each process. Optionally, it also allocates arrays for group velocities if requested.
+!> Debug output is provided for each allocation if compiled with __DEBUG.
+!>
+!> - Allocates: force_const, dyn_mat, evec, eval, vel (if comp_vel)
+!> - Sets up ScaLAPACK descriptors for each distributed matrix
+!> - Handles both eigenvector and non-eigenvector cases
+!> - Uses MPI barriers for synchronized debug output
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \subroutine allocate_distributed_arrays
+!>     Allocates and initializes all distributed arrays for phonon calculations.
+!>     Must be called after MPI and BLACS grid are initialized and before any matrix operations.
+!>
+!> \par Usage
+!>     call allocate_distributed_arrays()
+!>
+!> \par Example
+!>     call allocate_distributed_arrays()
+!>
+!> \note
+!>     This routine assumes all global variables and grid structures are initialized.
+!>     Debug output is controlled by the __DEBUG preprocessor flag.
+!>     Memory allocation is collective across all MPI ranks.
+!>     For eigenvector allocation, checks pzheevx_vars%comp_evec == 'V'.
+!>     Group velocity arrays are only allocated if comp_vel is true.
+!>     All arrays are deallocated elsewhere.
+!> 
+!> \see main.F90, mod_variables.F90
+!> 
+!> \warning
+!>     Ensure that the number of atoms and BLACS grid are set correctly before calling this routine.
+!>     Incorrect grid or atom count may lead to allocation errors or incorrect results.
+!> 
+!> \remarks
+!>     This file is part of the PARPHOM package for phonon calculations.
+!> 
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> 
+!> -----------------------------------------------------------------------------
 subroutine allocate_distributed_arrays()
+    !> \brief Main allocation routine for all distributed arrays used in phonon calculations.
+    !> \details
+    !> Allocates and initializes distributed arrays for force constants, dynamical matrices, eigenvalues, eigenvectors, and group velocities.
+    !> Sets up ScaLAPACK descriptors and computes local sizes for each process. Handles both eigenvector and non-eigenvector cases, and optionally allocates group velocity arrays if requested.
+    !> Debug output is provided for each allocation if compiled with __DEBUG.
+    !>
+    !> \note
+    !>     Must be called after MPI and BLACS grid are initialized and before any matrix operations.
+    !> \see main.F90, mod_variables.F90
+    !> \warning Ensure that the number of atoms and BLACS grid are set correctly before calling this routine.
+    !> \par Example
+    !>     call allocate_distributed_arrays()
+    !> 
 
     use global_variables
     use mpi

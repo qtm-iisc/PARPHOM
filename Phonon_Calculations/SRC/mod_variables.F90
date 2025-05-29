@@ -1,3 +1,52 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+!------------------------------------------------------------------------------
+!> \file mod_variables.F90
+!> \brief Defines global variables, parameters, and derived types for PARPHOM.
+!>
+!> This module contains all global variables, parameters, and custom types used
+!> throughout the PARPHOM package for phonon calculations. It centralizes the
+!> definitions of BLACS/ScaLAPACK grid information, system properties, file
+!> metadata, and MPI communication structures.
+!>
+!> - Provides derived types for BLACS grid, LAMMPS input, Brillouin zone points,
+!>   ScaLAPACK variables, system structure, force constants, and distributed arrays.
+!> - Contains global variables for distributed matrix storage, eigenvalues,
+!>   eigenvectors, group velocities, and MPI communication.
+!> - All variables and types are accessible via the `global_variables` module.
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This module must be used (`use global_variables`) in any subroutine or function
+!>   that requires access to global parameters or data structures.
+!>   All allocations and deallocations of distributed arrays are handled elsewhere.
+!>
+!> \warning
+!>   Ensure that all variables are properly initialized before use.
+!>   Incorrect initialization may lead to runtime errors or incorrect results.
+!>
+!> \remarks
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!------------------------------------------------------------------------------
 module global_variables
     
     use hdf5

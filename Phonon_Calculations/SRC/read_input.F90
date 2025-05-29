@@ -15,9 +15,29 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
-! Program: read_input (Parse input file and initialize parameters)
-!> \file   read_input.F90
-!> \brief  Reads and parses the input configuration file for phonon calculations.
+!> \file read_input.F90
+!> \brief Reads and parses the input configuration file for PARPHOM phonon calculations.
+!>
+!> This file contains routines for reading the main input file, setting default parameters, and parsing user-specified options.
+!> It maps input parameters to global variables, handles type conversion, and provides debug output for all parsed values.
+!>
+!> - Calls `default_variables` to set initial defaults
+!> - Reads and parses the input file line by line, mapping parameters to global variables
+!> - Handles special parsing for booleans, numerics, and string options
+!> - Provides debug output for all parameter values
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure that the input file exists and is formatted correctly before running.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+
+!> \brief Reads and parses the input configuration file, mapping parameters to global variables.
 !> \details
 !>   - Calls `default_variables` to set initial defaults.
 !>   - Retrieves and validates the input filename.
@@ -309,7 +329,7 @@ function capital(in_char)
     return
 end function capital
 
-!> \brief Set default input parameter values.
+!> \brief Set default input parameter values for all global variables.
 subroutine default_variables()
     use global_variables
     implicit none

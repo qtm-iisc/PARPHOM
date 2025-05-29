@@ -15,16 +15,48 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
-! Program: initialize_mpi (Initialize MPI and global variables)
-!> \file   mpi_start.F90
-!> \brief  Initializes MPI environment, sets communicator, rank, and size, and prints start message.
-!> \details
+!> \file mpi_start.F90
+!> \brief Initializes MPI environment, sets communicator, rank, and size, and prints start message.
+!>
+!> This subroutine initializes the MPI environment for PARPHOM, sets up the global communicator, determines the number of processes and the rank of each process, checks for initialization errors, and prints a startup logo and date-time message.
+!>
+!> - Calls `mpi_init` to initialize MPI
+!> - Sets `mpi_global%comm` to `MPI_COMM_WORLD`
+!> - Retrieves the total number of processes and the rank of the current process
+!> - Checks for initialization errors and outputs debug message if any
+!> - Prints a startup logo and a date-time stamped message indicating the number of MPI processes
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure that MPI is not already initialized before calling this routine.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> 
+!> \subroutine initialize_mpi
+!> \brief  Initializes the MPI environment and sets up global variables.
+!>
 !> This routine:
 !>   - Calls `mpi_init` to initialize MPI.
 !>   - Sets `mpi_global%comm` to `MPI_COMM_WORLD`.
 !>   - Retrieves the total number of processes and the rank of the current process.
 !>   - Checks for initialization errors and outputs debug message if any.
 !>   - Prints a startup logo and a date-time stamped message indicating the number of MPI processes.
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure that MPI is not already initialized before calling this routine.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
 subroutine initialize_mpi()
   use mpi
   use global_variables

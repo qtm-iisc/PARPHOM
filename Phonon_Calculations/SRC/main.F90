@@ -15,13 +15,27 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
-! Program: compute_phonon_bands (Main driver for phonon dispersion and band structure calculations)
-!
-!> \file   main.F90
-!> \brief  Main program to orchestrate phonon dispersion and electronic band structure calculations.
-!> \details
+!> \file main.F90
+!> \brief Main program to orchestrate phonon dispersion and electronic band structure calculations.
+!>
 !> This program initializes MPI and BLACS, reads inputs (structure, q-points, force constants),
 !> distributes data across processes, diagonalizes dynamical matrices, and writes phonon and electronic band outputs.
+!>
+!> - Initializes MPI and BLACS grid
+!> - Reads user input and structure files
+!> - Allocates and distributes arrays for parallel computation
+!> - Diagonalizes dynamical matrices and writes results
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure all input files and global variables are set before running this program.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
 
 program compute_phonon_bands
   implicit none

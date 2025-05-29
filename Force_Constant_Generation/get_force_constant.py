@@ -418,6 +418,12 @@ def print_logo(comm):
         print("\t\tS. Mandal, I. Maity, H. R. Krishnamurthy, M. Jain",flush=True)
         print(" ", flush=True)
         print(" ", flush=True)
+        print("\t\t\For any publications arising from this code, please cite:",flush=True)
+        print("\t\t\S Mandal, I Maity, H R Krishnamurthy, M Jain, arxiv:2410.21075 ",flush=True)
+        print(" ", flush=True)
+        print(" ", flush=True)
+        print("\t\tThis code is distributed under the GNU General Public License v3.0",flush=True)
+        print(" ", flush=True)
     return
 
 

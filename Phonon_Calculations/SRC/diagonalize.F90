@@ -1,3 +1,44 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+!> \file diagonalize.F90
+!> \brief Diagonalizes the distributed dynamical matrix for phonon calculations.
+!>
+!> This subroutine performs the distributed diagonalization of the dynamical matrix using ScaLAPACK's pzheevx routine.
+!> It handles workspace queries, allocation, and error reporting for eigenvalue and eigenvector computation in a parallel environment.
+!>
+!> - Allocates and manages all required work arrays for ScaLAPACK diagonalization
+!> - Handles error and convergence reporting for eigenvalues and eigenvectors
+!> - Updates the global eigenvalue array with the computed results
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>   Assumes all global variables and MPI have been initialized.
+!>
+!> \warning
+!>   Ensure that the dynamical matrix and all descriptors are allocated and initialized before calling this routine.
+!>   Incorrect setup may lead to runtime errors or incorrect results.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> 
+
 subroutine diagonalize_dynamical_matrix()
 
     use global_variables

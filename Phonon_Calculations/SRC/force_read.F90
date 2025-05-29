@@ -1,3 +1,46 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+!> \file force_read.F90
+!> \brief Routines for reading force constants for PARPHOM phonon calculations.
+!>
+!> This file contains routines for reading force constant data from input files and distributing them across processes.
+!>
+!> - Reads and parses force constant files
+!> - Distributes force constant data to all processes
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure that the force constant files exist and are formatted correctly before running.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> 
+
+!> \brief Reads and distributes force constant data from HDF5 files for PARPHOM calculations.
+!> \details
+!> This subroutine reads the force constant matrix from an HDF5 file and distributes the data across all MPI processes
+!> according to the block-cyclic distribution. It selects the appropriate elements for each process, reads them into memory,
+!> and performs symmetrization of the force constant matrix. Debug output is provided for data selection and symmetrization steps.
+!> The subroutine ensures that the force constant data is available in the correct format for subsequent dynamical matrix construction.
 subroutine read_force_constants()
     
     use hdf5 
@@ -172,6 +215,11 @@ end subroutine
 
 
 
+!> \brief Converts 2D matrix indices to 4D HDF5 coordinates for force constant storage.
+!> \details
+!> This utility subroutine maps the 2D indices (i, j) of the force constant matrix to the 4D coordinate system
+!> used in the HDF5 file layout. It is used internally by `read_force_constants` to select the correct elements
+!> when reading from the HDF5 dataset.
 SUBROUTINE twod_to_fourd (i,j,coord)
   USE HDF5
   IMPLICIT NONE

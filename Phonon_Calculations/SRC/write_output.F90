@@ -1,3 +1,50 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+!> \brief Write phonon calculation results (eigenvalues, eigenvectors, velocities) to an HDF5 file in parallel.
+!>
+!> This subroutine manages all output operations for a single q-point in a parallel phonon calculation.
+!> It performs the following major tasks:
+!>   - Checks if the HDF5 output file exists. If not, creates a new file. If it exists, opens it for parallel access.
+!>   - Creates a group for the current q-point and writes the q-vector to the file.
+!>   - Stores the computed phonon eigenvalues for the q-point, converting them to physical units (cm^-1).
+!>   - If eigenvectors are computed, redistributes the distributed matrix blocks and writes the complex eigenvectors
+!>     to the file using a compound HDF5 datatype for real and imaginary parts.
+!>   - If group velocities are computed, constructs the velocity matrix for each Cartesian direction by evaluating
+!>     derivatives of the dynamical matrix, and writes the diagonal elements (group velocities) to the file.
+!>   - All I/O is performed in parallel using MPI and HDF5 collective operations for efficiency and scalability.
+!>   - Handles all HDF5 resource management, including creation and closing of property lists, dataspaces, datasets,
+!>     and groups, as well as MPI communicator splitting for selective writing.
+!>   - Provides progress messages if enabled.
+!>
+!> \param[in] q_indx Integer index of the q-point for which results are written.
+!>
+!> \details
+!>   - The subroutine is designed for distributed-memory parallel environments (MPI).
+!>   - It assumes the presence of global variables and distributed arrays for eigenvalues, eigenvectors, and velocities.
+!>   - The output file structure is hierarchical: each q-point is a group containing datasets for q-vector, eigenvalues,
+!>     eigenvectors, and velocities.
+!>   - Eigenvectors are stored as compound datasets with separate real and imaginary fields.
+!>   - Velocities are written for each Cartesian direction and band, normalized by the phonon frequency.
+!>   - All error handling is performed via HDF5 and MPI error codes.
+!>
+!> \authors Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+
+
 subroutine write_output(q_indx)
 
     use hdf5
@@ -12,7 +59,6 @@ subroutine write_output(q_indx)
     
     ! HDF5 Variables
     ! --------------
-
     integer(4) :: hdf5_error
     integer(hid_t) :: plist_id, glist_id, dlist_id
     integer(hid_t) :: file_id
@@ -34,35 +80,24 @@ subroutine write_output(q_indx)
     integer(hid_t) :: dtr_id, dti_id, dtype_id
 
     integer :: proc_should_write, i
-
     integer :: write_comm
    
     integer, external :: numroc
 
     double precision, allocatable, dimension(:) :: temp
-
     double complex, parameter :: alpha = cmplx(1,0)
     double complex, parameter :: beta = cmplx(0,0)
 
-    
-    ! open hdf5 interface
-    ! -------------------
-
+    ! Step 1: Open HDF5 interface
     call h5open_f(hdf5_error)
 
-    ! ------------------------------------ !
-    ! check if file exists                 !
-    ! if file exists open file in parallel !
-    ! else create new file                 !
-    ! ------------------------------------ !
-
+    ! Step 2: Prepare output file name and check if it exists
     write(file_name, '(2A)') trim(adjustl(output_file_location)), &
                              trim(adjustl(output_file_name))
-
     inquire(file=file_name, exist=file_exists)
-       
     write(group_name,'(I12.12)') q_indx 
 
+    ! Step 3: Create or open the HDF5 file (serial, root process only)
     if (file_exists) then
         if (mpi_global%rank == 0) then
             call h5fopen_f(trim(adjustl(file_name)), H5F_ACC_RDWR_F, file_id, hdf5_error)
@@ -73,6 +108,7 @@ subroutine write_output(q_indx)
         end if
     end if
 
+    ! Step 4: Create group for this q-point and write q-vector (root only)
     if (mpi_global%rank==0) then
         call h5gcreate_f(file_id, group_name, group_id, hdf5_error)
         dim_q(1) = 3
@@ -85,49 +121,48 @@ subroutine write_output(q_indx)
         call h5fclose_f(file_id, hdf5_error)
     end if
 
-    
+    ! Step 5: Open file and group in parallel (all processes)
     call h5pcreate_f(H5P_FILE_ACCESS_F, plist_id, hdf5_error)
     call h5pset_fapl_mpio_f(plist_id, int(mpi_global%comm,kind=4) , MPI_INFO_NULL, hdf5_error)
     call h5fopen_f(trim(adjustl(file_name)), H5F_ACC_RDWR_F, file_id, hdf5_error, &
                    access_prp = plist_id)    
-
     call h5pcreate_f(H5P_GROUP_ACCESS_F, glist_id, hdf5_error)
     call h5pset_all_coll_metadata_ops_f(glist_id, .true. , hdf5_error)
     call h5gopen_f(file_id, group_name, group_id, hdf5_error, gapl_id = glist_id)
 
-
-    ! -----------------------
-    ! Store eigenvalues
-    ! -----------------------
-
+    ! Step 6: Store eigenvalues (all processes)
     dim_eval(1) = pzheevx_vars%comp_num_eval
-    eval = eval*15.633302*33.35641   ! in cm-1
+    eval = eval*15.633302*33.35641   ! Convert to cm^-1
     call h5screate_simple_f(1, dim_eval, filespace, hdf5_error)
     call h5dcreate_f(group_id, 'eigenvalues', H5T_IEEE_F64LE, filespace, dset_id, hdf5_error)
-
     call h5pcreate_f(H5P_DATASET_XFER_F, dlist_id, hdf5_error)
     call h5pset_dxpl_mpio_f(dlist_id, H5FD_MPIO_COLLECTIVE_F, hdf5_error)
-
     call h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, eval, dim_eval, hdf5_error, xfer_prp = dlist_id)
     call h5sclose_f(filespace,hdf5_error)
     call h5dclose_f(dset_id, hdf5_error)
     call h5pclose_f(dlist_id, hdf5_error)
 
+    ! Step 7: Close group, file, and property lists after eigenvalue write
     call h5gclose_f(group_id,hdf5_error)
     call h5pclose_f(glist_id, hdf5_error)
     call h5pclose_f(plist_id, hdf5_error)
     call h5fclose_f(file_id, hdf5_error)
     
+    ! Step 8: Print progress if enabled
     if (print_progress) then
         write(done_line,"(I0,3A)") pzheevx_vars%comp_num_eval, " eigenvalues written to ", &
                                   trim(adjustl(file_name)), " on "
-    
         call date_time_message(trim(done_line))
     end if
 
-    ! --------------------------
-    ! Store Eigenvectors
-    ! --------------------------
+    ! Step 9: Store eigenvectors if requested
+    ! - Split communicators so only relevant processes write
+    ! - Open file/group in parallel for writing
+    ! - Create compound datatype for complex numbers
+    ! - Redistribute and select elements for writing
+    ! - Write real and imaginary parts separately
+    ! - Close all HDF5 resources
+    ! - Print progress if enabled
 
     ! Since the local arrays contain elements distributed in block-cyclic fashion
     ! we have to reverse this distribution and select the coordinates in the 
@@ -448,8 +483,8 @@ subroutine write_output(q_indx)
         end if
     end if
 
+    ! Step 11: Finalize and close HDF5 interface
     call mpi_barrier(mpi_global%comm, mpierr)
-
     call h5close_f(hdf5_error)
 
     return

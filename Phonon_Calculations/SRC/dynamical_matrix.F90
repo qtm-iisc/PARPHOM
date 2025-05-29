@@ -1,3 +1,51 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+!> \file dynamical_matrix.F90
+!> \brief Construction of the dynamical matrix for phonon calculations in PARPHOM.
+!>
+!> This file contains routines for building the dynamical matrix from force constants and atomic positions.
+!>
+!> - Constructs the dynamical matrix for each q-point
+!> - Handles symmetry and mass weighting
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure that force constants and atomic positions are initialized before calling these routines.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> 
+
+!> \brief Constructs the distributed dynamical matrix for a given q-point and its derivatives.
+!> \details
+!> This subroutine creates the dynamical matrix in a block-cyclically distributed manner across processors.
+!> It supports both analytical and finite-difference computation of derivatives with respect to q.
+!> The variable `derivative` controls which derivative (if any) is computed:
+!>   - 0: No derivative
+!>   - 1: dD/dkx
+!>   - 2: dD/dky
+!>   - 3: dD/dkz
+!> The subroutine handles both analytical and finite-difference approaches for velocity calculations.
+!> Debug output is provided if compiled with __DEBUG.
 subroutine create_dynamical_matrix(q_indx, derivative)
 
     use mpi
@@ -143,6 +191,12 @@ subroutine create_dynamical_matrix(q_indx, derivative)
 end subroutine
 
 
+!> \brief Computes a single element of the dynamical matrix (and optionally its derivative).
+!> \details
+!> This subroutine calculates the (i,j) element of the dynamical matrix for a given q-point.
+!> It supports both the value and the first derivative (for group velocity calculations).
+!> The result is mass-weighted and accounts for periodic images and phase factors.
+!> Used internally by `create_dynamical_matrix`.
 subroutine create_dynamical_ij(ipos, q_point, inp_ia, inp_ja, deriv_order, derivative, dij)
   
   ! -------------------------------------------------------------------

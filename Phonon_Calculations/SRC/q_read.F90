@@ -1,3 +1,43 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+!> \file q_read.F90
+!> \brief Reads and distributes q-point lists for phonon calculations in PARPHOM.
+!>
+!> This file contains routines for reading the list of q-points from input files and distributing them
+!> across MPI processes for parallel phonon calculations. It handles both single-pool and multi-pool
+!> (QPOOL) parallelization strategies and provides debug output for q-point distribution.
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure that the q-point file exists and is formatted correctly before running.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+
+!> \brief Reads the q-point list from file and distributes q-points among MPI processes.
+!> \details
+!> This subroutine reads the list of q-points from the specified file, determines the range of q-points
+!> assigned to each process (or pool), and allocates the q-point array accordingly. It provides debug output
+!> for the distribution and contents of q-points read by each process or pool.
 subroutine read_q_file()
     use global_variables
     implicit none

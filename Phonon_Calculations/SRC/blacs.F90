@@ -15,15 +15,28 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
-! Program: blacs_grid_initialization (BLACS grid routines)
-!> \file   blacs.F90
-!> \brief  Initialization and management of BLACS grids for parallel phonon computations.
-!> \details
-!>   Provides routines to initialize the BLACS grid context, optionally split into QPools for q-point parallelization,
-!>   and helper routines to determine grid dimensions and process coloring.
+!> \file blacs.F90
+!> \brief BLACS grid initialization and utility routines for PARPHOM.
+!>
+!> This file contains routines for initializing and managing the BLACS process grid, which is used for distributed linear algebra in phonon calculations.
+!>
+!> - Initializes BLACS context and grid
+!> - Provides utility routines for process mapping and grid information
+!>
+!> \author Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> \ingroup phonon_allocation
+!>
+!> \note
+!>   This file is part of the PARPHOM package for phonon calculations.
+!>
+!> \warning
+!>   Ensure that MPI is initialized before calling BLACS routines.
+!>
+!> \copyright GPL-3.0 Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+!> 
 
 subroutine blacs_grid_initialization()
-
+    
     use global_variables
     use mpi
 
