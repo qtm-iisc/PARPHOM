@@ -1,5 +1,10 @@
 ## Generation of Force constants using Finite difference method
 
+###  Prerequisites  
+
+A serial version of the Python wrapper for LAMMPS needs to be available. The script calls LAMMPS independently from each MPI core. If the LAMMPS wrapper is compiled with MPI then the calls are not independent.  
+For installing a serial version of LAMMPS refer to the [LAMMPS documentation](https://docs.lammps.org/Python_install.html).
+
     
 ###  Usage
    

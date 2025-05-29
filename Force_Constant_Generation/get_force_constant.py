@@ -1,6 +1,21 @@
+# This file is part of PARAPHOM.
+# 
+# PARAPHOM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# PARAPHOM is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with PARAPHOM.  If not, see <https://www.gnu.org/licenses/>.
+
 """
     Author: Shinjan Mandal
-    Contact: mshinjan@iisc.ac.in
+    Contact: shinjanm@umich.edu
     Github: ShinjanM
     
     Generation of Force constants by finite difference method.
@@ -26,8 +41,6 @@
 
 """
 
-
-
 from mpi4py import MPI
 import numpy as np
 from lammps import lammps
@@ -38,6 +51,15 @@ import sys
 import os
 
 def parseOptions(comm):
+    """
+    Parse command line options using argparse and broadcast to all MPI ranks.
+
+    Args:
+        comm: MPI communicator.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
     parser = argparse.ArgumentParser(description=print_logo(comm))
 
     parser.add_argument("-i","--input", help='Input File', type=str)
@@ -67,7 +89,13 @@ def parseOptions(comm):
 
 def printProgressBar(i,m,postText,n_bar=20):
     """
-        Prints progress of the calculations
+    Prints a progress bar to the console.
+
+    Args:
+        i (int): Current iteration.
+        m (int): Total iterations.
+        postText (str): Text to display after the progress bar.
+        n_bar (int): Number of bars in the progress bar.
     """
     j=i/m
     sys.stdout.write('\r')
@@ -78,7 +106,16 @@ def printProgressBar(i,m,postText,n_bar=20):
 
 
 def get_structure_from_lammps(lammps_input_file,show_log=False):
+    """
+    Extracts structure information from a LAMMPS input file.
 
+    Args:
+        lammps_input_file (str): Path to the LAMMPS input file.
+        show_log (bool): If True, show LAMMPS log output.
+
+    Returns:
+        tuple: (number of atoms, lattice, type masses, atom types, masses, positions, crystal coordinates)
+    """
     cmd_list = ['-log', 'none']
     if not show_log:
         cmd_list += ['-echo', 'none', '-screen', 'none']
@@ -127,14 +164,15 @@ def get_structure_from_lammps(lammps_input_file,show_log=False):
 
 def distribute(list_to_be_distributed, rank, size):
     """
-        Input:
-               list_to_be_distributed: list or numpy array to be distributed
-               rank: rank of the matrix where the sliced list is to be
-                     distributed to.
-               size: total number of processors being used
+    Distributes a list or array among MPI ranks.
 
-        Output:
-               local_list: list local to the rank
+    Args:
+        list_to_be_distributed (list or np.ndarray): List or numpy array to distribute.
+        rank (int): Current MPI rank.
+        size (int): Total number of MPI ranks.
+
+    Returns:
+        list: List local to the current rank.
     """
     from itertools import islice
     number_of_local_points = len(list_to_be_distributed)//size
@@ -156,6 +194,21 @@ def distribute(list_to_be_distributed, rank, size):
 
 
 def get_forces(lmp, id_, reference, natom, d,at_id,alpha):
+    """
+    Displace a single atom and compute forces on all atoms.
+
+    Args:
+        lmp: LAMMPS object.
+        id_ (np.ndarray): Atom IDs.
+        reference (np.ndarray): Reference positions.
+        natom (int): Number of atoms.
+        d (float): Displacement value.
+        at_id (int): Atom index to displace.
+        alpha (int): Cartesian direction (0,1,2).
+
+    Returns:
+        np.ndarray: Forces on all atoms after displacement.
+    """
     ref = np.copy(reference)
     ref[at_id,alpha] += d
     for i in range(natom):
@@ -172,7 +225,20 @@ def get_forces(lmp, id_, reference, natom, d,at_id,alpha):
 
 
 def get_force_constant(lammps_input_file,displacement,at_id,alpha,replicate,show_log=False):
-    
+    """
+    Compute force constants by finite difference for a given atom and direction.
+
+    Args:
+        lammps_input_file (str): Path to LAMMPS input file.
+        displacement (float): Displacement value.
+        at_id (int): Atom index to displace.
+        alpha (int): Cartesian direction (0,1,2).
+        replicate (list or np.ndarray): Replication factors for supercell.
+        show_log (bool): If True, show LAMMPS log output.
+
+    Returns:
+        np.ndarray: Force constant matrix for the displaced atom and direction.
+    """
     cmd_list = ['-log', 'none']
     if not show_log:
         cmd_list += ['-echo', 'none', '-screen', 'none']
@@ -235,7 +301,14 @@ def get_force_constant(lammps_input_file,displacement,at_id,alpha,replicate,show
 
 def symmetrize_fc(fc_file,comm,local_atoms,natom,no_of_iterations):
     """
-        Impose symmetries
+    Impose symmetry operations on the force constant matrix.
+
+    Args:
+        fc_file (str): Path to force constant HDF5 file.
+        comm: MPI communicator.
+        local_atoms (list): List of atom indices local to this rank.
+        natom (int): Number of atoms.
+        no_of_iterations (int): Number of symmetry iterations.
     """
     f = h5py.File(fc_file,'r+',driver='mpio',comm=comm)
     data = f['force_constants']
@@ -251,7 +324,11 @@ def symmetrize_fc(fc_file,comm,local_atoms,natom,no_of_iterations):
 
 def acoustic_sum_rule(data,local_atoms):
     """
-        Impose acoustic sum rule
+    Impose the acoustic sum rule on the force constant matrix.
+
+    Args:
+        data (np.ndarray): Force constant matrix.
+        local_atoms (list): List of atom indices local to this rank.
     """
     for i in local_atoms:
         for alpha in range(3):
@@ -264,7 +341,12 @@ def acoustic_sum_rule(data,local_atoms):
 
 def inversion_symmetry(data,local_atoms,natom):
     """
-        Impose inversion symmetry
+    Impose inversion symmetry on the force constant matrix.
+
+    Args:
+        data (np.ndarray): Force constant matrix.
+        local_atoms (list): List of atom indices local to this rank.
+        natom (int): Number of atoms.
     """
     for i in local_atoms:
         for j in range(i,natom):
@@ -277,11 +359,18 @@ def inversion_symmetry(data,local_atoms,natom):
 
 def p2s_map(lat,lammps_input_file, replicate,natom,crys):
     """
-        Primitive to supercell map in case of force constants generated in supercells
-        Returns the indices of the atoms in the replicated lammps file which are 
-        equivalent to the atoms in the original unit cell.
-    """
+    Compute the mapping from primitive cell to supercell atom indices.
 
+    Args:
+        lat (np.ndarray): Lattice vectors.
+        lammps_input_file (str): Path to LAMMPS input file.
+        replicate (list or np.ndarray): Replication factors for supercell.
+        natom (int): Number of atoms in the primitive cell.
+        crys (np.ndarray): Crystal coordinates of atoms in the primitive cell.
+
+    Returns:
+        tuple: (p2s_map, p_indices)
+    """
     cmd_list = ['-log', 'none', '-echo', 'none', '-screen', 'none']
     lmp = lammps(cmdargs=cmd_list)
     lmp.file(lammps_input_file)
@@ -305,6 +394,12 @@ def p2s_map(lat,lammps_input_file, replicate,natom,crys):
 
 
 def print_logo(comm):
+    """
+    Print the program logo and credits.
+
+    Args:
+        comm: MPI communicator.
+    """
     r = comm.Get_rank()
     if r == 0:
         print(" ")
@@ -330,7 +425,12 @@ def print_logo(comm):
 
 
 def main():
+    """
+    Main function to generate force constants and optionally symmetrize them.
 
+    Initializes MPI, parses arguments, extracts structure, distributes work, computes force constants,
+    writes to HDF5, and applies symmetrization if requested.
+    """
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()

@@ -1,3 +1,27 @@
+! Package: PARPHOM
+! Authors: Shinjan Mandal, Indrajit Maity, H R Krishnamurthy, Manish Jain
+! License: GPL-3.0
+!
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+! Program: blacs_grid_initialization (BLACS grid routines)
+!> \file   blacs.F90
+!> \brief  Initialization and management of BLACS grids for parallel phonon computations.
+!> \details
+!>   Provides routines to initialize the BLACS grid context, optionally split into QPools for q-point parallelization,
+!>   and helper routines to determine grid dimensions and process coloring.
+
 subroutine blacs_grid_initialization()
 
     use global_variables
@@ -15,6 +39,9 @@ subroutine blacs_grid_initialization()
 #endif
 
 #ifdef __QPOOL
+    !> \brief Split MPI processes into QPools and initialize BLACS contexts per pool.
+    !> \details
+    !>   Divides processors into groups for parallel q-point computations when QPools are enabled.
 
     ! With QPools
     ! -----------
@@ -35,10 +62,13 @@ subroutine blacs_grid_initialization()
         call exit
     end if
 
+    !> Call get_color to determine pool assignments
     call get_color(mpi_global%rank, mpi_global%size_, num_pools,  &
                    mpi_local%color, mpi_local%key, mpi_local%size_)
+    !> Split the communicator by color
     call mpi_comm_split(mpi_global%comm, mpi_local%color, mpi_local%key, &
                         mpi_local%comm, mpierr)
+    !> Obtain new rank in local communicator
     call mpi_comm_rank(mpi_local%comm, mpi_local%rank, mpierr)
 
 #ifdef __DEBUG
@@ -57,17 +87,18 @@ subroutine blacs_grid_initialization()
     call mpi_barrier(mpi_global%comm, mpierr)
     do k=0,mpi_global%size_-1
         if (mpi_global%rank==k) then
-            write(*,'( I8,5I10 )') mpi_global%rank, mpi_global%size_, mpi_local%rank, & 
+            write(*,'( I8,5I10 )') mpi_global%rank, mpi_global%size_, mpi_local%rank, &
                                    mpi_local%size_, mpi_local%color, mpi_local%key
         end if
         call mpi_barrier(mpi_global%comm, mpierr)
     end do
 #endif
-    
+    !> Allocate arrays for grid dimensions and contexts
     allocate(dim_(num_pools,2))
     allocate(icontxts(num_pools))
 
     dim_= 0
+    !> Determine local optimum grid
     call get_optimum_grid(mpi_local%size_, grid%npcol, grid%nprow)
 
     if (mpi_local%rank==0) then
@@ -75,9 +106,11 @@ subroutine blacs_grid_initialization()
         dim_(mpi_local%color, 2) = grid%npcol
     end if
 
+    !> Gather dims across all pools
     call mpi_allreduce(MPI_IN_PLACE, dim_, num_pools*2, MPI_INT, MPI_SUM, &
                        mpi_global%comm, mpierr)
 
+    !> Get global BLACS context
     call blacs_get(-1,0,global_icontxt)
     icontxts = global_icontxt
 
@@ -92,6 +125,7 @@ subroutine blacs_grid_initialization()
     debug_str = 'GlobRank    Icontxt     Group'
     call debug_output(0)
 #endif
+    !> Initialize grid mapping for each pool
     do i=1,num_pools
         allocate(map(dim_(i,1),dim_(i,2)))
         do j=1,dim_(i,1)
@@ -116,6 +150,7 @@ subroutine blacs_grid_initialization()
     end do
     
     call mpi_barrier(mpi_global%comm, mpierr)
+    !> Set final grid context and dimensions
     grid%context = icontxts(mpi_local%color)
     grid%nprow = dim_(mpi_local%color,1)
     grid%npcol = dim_(mpi_local%color,2)
@@ -150,13 +185,12 @@ subroutine blacs_grid_initialization()
     ! an unique column index (mypcol)
     ! --------------------------------
 
+    !> \brief Initialize a single BLACS grid across all MPI processes when QPools disabled.
     call blacs_pinfo(grid%rank, grid%size_)
     call get_optimum_grid(mpi_global%size_, grid%npcol, grid%nprow)
     call blacs_get(-1,0,grid%context)
     call blacs_gridinit(grid%context, 'C', grid%nprow, grid%npcol)
-    call blacs_gridinfo(grid%context, grid%nprow, grid%npcol, grid%myprow, grid%mypcol) 
-
-
+    call blacs_gridinfo(grid%context, grid%nprow, grid%npcol, grid%myprow, grid%mypcol)
 #ifdef __DEBUG
     debug_str = ' '
     do i=1,2
@@ -172,7 +206,7 @@ subroutine blacs_grid_initialization()
     call mpi_barrier(mpi_global%comm, mpierr)
     do i=0,mpi_global%size_-1
         if (mpi_global%rank==i) then
-            write(*,'(I4,5I10 )') grid%rank, grid%size_, grid%myprow, & 
+            write(*,'(I4,5I10 )') grid%rank, grid%size_, grid%myprow, &
                                   grid%nprow, grid%mypcol, grid%npcol
         end if
         call mpi_barrier(mpi_global%comm, mpierr)
@@ -183,16 +217,12 @@ subroutine blacs_grid_initialization()
 
     call mpi_barrier(mpi_global%comm, mpierr)
     return
+end subroutine blacs_grid_initialization
 
-end subroutine
-
-
-
-
-
-
-
-
+!> \brief Determine optimal BLACS grid dimensions given total processes.
+!> \param[in]  size_   Total number of MPI processes.
+!> \param[out] npcol   Number of process columns in the grid.
+!> \param[out] nprow   Number of process rows in the grid.
 subroutine get_optimum_grid(size_, npcol, nprow)
 
     implicit none
@@ -205,15 +235,16 @@ subroutine get_optimum_grid(size_, npcol, nprow)
     end do
 
     return
-
-end subroutine
-
-
-
-
-
+end subroutine get_optimum_grid
 
 #ifdef __QPOOL
+!> \brief Assign MPI communicator color and key for splitting into QPools.
+!> \param[in]   proc_id      MPI rank of the process.
+!> \param[in]   total_procs  Total MPI processes.
+!> \param[in]   no_of_groups Desired number of QPools.
+!> \param[out]  val          Assigned color (group ID).
+!> \param[out]  key_val      Key for ordering within each group.
+!> \param[out]  num_each     Number of processes per group.
 subroutine get_color(proc_id, total_procs, no_of_groups, val, key_val, num_each)
 
     ! returns the color to split the communicators depending
@@ -242,6 +273,5 @@ subroutine get_color(proc_id, total_procs, no_of_groups, val, key_val, num_each)
     end if
 
     return
-
-end subroutine
+end subroutine get_color
 #endif
