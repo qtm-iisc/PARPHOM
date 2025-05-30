@@ -4,8 +4,8 @@ To install PARPHOM Phonon Calculations, follow these steps:
 
 1. **Install Prerequisites**
    - MPI
-   - Intel MKL
-   - Parallel HDF5 (12.0 or later)
+   - Intel MKL ([Installation Guide](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html))
+   - Parallel HDF5 (12.0 or later) ([Installation Guide](https://portal.hdfgroup.org/display/support/Building+HDF5+with+MPI))
 
    Ensure these libraries are installed and available on your system.
 

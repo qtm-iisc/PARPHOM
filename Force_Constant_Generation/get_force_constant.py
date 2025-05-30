@@ -23,6 +23,9 @@
 
 This script computes force constants for atomistic systems using the finite difference method. It leverages LAMMPS for force calculations and MPI for parallelization. The code supports cell replication, symmetry operations, and outputs results in HDF5 format.
 
+@par Pre-requisites
+- The serial Python wrapper for LAMMPS must be installed. Please follow the official LAMMPS documentation for Python integration: https://docs.lammps.org/Python_module.html
+
 @par Usage
 @code{.sh}
 mpiexec -np <no. of cores> python get_force_constant.py -i <lammps input file> \
