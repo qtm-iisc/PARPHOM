@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyphutil"
+version = "1.0"
+description = "Utility functions for PARPHOM"
+authors = [
+    {name = "Shinjan Mandal", email = "shinjanm@umich.edu"}
+]
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=1.21.2",
+    "scipy>=1.6.2",
+    "matplotlib>=3.5.1",
+    "spglib>=1.16.2",
+    "mpi4py>=3.0.3",
+    "h5py>=3.6.0"
+]

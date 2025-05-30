@@ -135,14 +135,16 @@ module bz_integration
     subroutine progress(i,n)
         use, intrinsic :: iso_fortran_env, only: output_unit
         implicit none
-        integer, parameter :: ucs4 = selected_char_kind('ISO_10646')
+        !integer, parameter :: ucs4 = selected_char_kind('ISO_10646')
         integer(kind=4) :: i,n,k, frac,l
-        character(kind=ucs4,len=32)::bar="                            ???%"
+        !character(kind=ucs4,len=32)::bar="                            ???%"
+        character(len=32)::bar="                            ???%"
         frac = int(i*100/n)
         write(unit=bar(29:31),fmt="(i3)")frac
         l = int(i*25/n)
         do k=1,l
-            bar(2+k:2+k)= char(61,kind=ucs4) !"█"
+            !bar(2+k:2+k)= char(61,kind=ucs4) !"█"
+            bar(2+k:2+k)= char(61) !"█"
         enddo 
         write(unit=6,fmt="(a1,a40,a,$)") char(13), bar, ' of calculations done.'
         return

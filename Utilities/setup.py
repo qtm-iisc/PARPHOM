@@ -1,25 +1,21 @@
-#import setuptools
-from numpy.distutils.core import setup, Extension
+import setuptools
 
-ext1 = Extension(name='bz_integration', 
-                 sources=['pyphutil/fortran_routines/bz_integration.f90'],
-                 )
+# Read README safely
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
 
-ext2 = Extension(name='neighbor',
-                 sources=['pyphutil/fortran_routines/neighbor_list.f90'],
-                 )
-
-
-setup(name = 'pyphutil',
-      version = "1.0",
-      description = 'Utility frunctions for PARPHOM',
-      long_description=open('README.md').read(),
-      long_description_content_type='text/markdown',
-      author = 'Shinjan Mandal',
-      author_email = 'mshinjan@iisc.ac.in',
-      url = "https://github.com/qtm-iisc/PARPHOM",
-      packages = ['pyphutil'],
-      package_dir = {'pyphutil':'pyphutil/'},
-      #install_requires = open('requirements.txt').read(),
-      ext_modules = [ext1,ext2]
-      )
+setuptools.setup(
+    name='pyphutil',
+    version='1.0',
+    description='Utility functions for PARPHOM',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    author='Shinjan Mandal',
+    author_email='shinjanm@umich.edu',
+    url='https://github.com/qtm-iisc/PARPHOM',
+    packages=['pyphutil', 'pyphutil.fortran_routines'],
+    package_dir={'pyphutil': 'pyphutil'},
+    include_package_data=True,
+    zip_safe=False,
+)
+# Note: Fortran extension build is handled by f2py before install.
