@@ -1,0 +1,13 @@
+# Makefile for generating Doxygen documentation for get_force_constant.py
+
+DOXYGEN = doxygen
+DOXYFILE = Doxyfile
+
+.PHONY: doc clean
+
+doc:
+	$(DOXYGEN) $(DOXYFILE)
+
+clean:
+	rm -rf doc/html
+	echo "Documentation cleaned."

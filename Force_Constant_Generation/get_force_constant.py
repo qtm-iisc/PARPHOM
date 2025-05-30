@@ -14,31 +14,46 @@
 # along with PARAPHOM.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-    Author: Shinjan Mandal
-    Contact: shinjanm@umich.edu
-    Github: ShinjanM
-    
-    Generation of Force constants by finite difference method.
-    
-    Usage
-    -----
+@package PARAPHOM.Force_Constant_Generation
+@file get_force_constant.py
+@brief Generation of force constants by finite difference method using LAMMPS and MPI.
 
-    mpiexec -np <no. of cores> get_force_constant.py -i <lammps input file> 
-        
-        [ Optional arguments: -o Output file, 
-                              -d Displacement of each atom,
-                              -s turn on symmetry,
-                              -t Number of symmetry operations
-                              -r Replicate]
-    
-    Theory
-    ------
+@author Shinjan Mandal, I. Maity, H. R. Krishnamurthy, M. Jain
+@copyright GNU General Public License v3.0
 
-    We displace every atom by a finite distance and compute the derivative of the 
-    Forces on the atoms due to the displacement.
+This script computes force constants for atomistic systems using the finite difference method. It leverages LAMMPS for force calculations and MPI for parallelization. The code supports cell replication, symmetry operations, and outputs results in HDF5 format.
 
-        $\phi_{a,b}^{i,j} = - \frac{dF_{b,j}}{dr_{a,i}}$
+@par Usage
+@code{.sh}
+mpiexec -np <no. of cores> python get_force_constant.py -i <lammps input file> \
+    [-o Output file] [-d Displacement] [-s] [-t Iterations] [-r Replicate]
+@endcode
 
+@par Arguments
+- -i, --input: Input LAMMPS file (required)
+- -o, --output: Output file (default: FORCE_CONSTANTS)
+- -d, --displacement: Displacement of each atom (default: 0.0001)
+- -s, --symmetrize: Turn on symmetry operations
+- -t, --iterations: Number of symmetry iterations (default: 20)
+- -r, --replicate: Replicate cell in x, y, z (default: 1 1 1)
+
+@par Theory
+The force constant matrix is computed as:
+\f[
+\phi_{a,b}^{i,j} = - \frac{dF_{b,j}}{dr_{a,i}}
+\f]
+where atoms are displaced and the resulting forces are used to compute derivatives.
+
+@par Output
+- HDF5 file containing the force constant matrix and mapping information.
+
+@par Example
+@code{.sh}
+mpiexec -np 4 python get_force_constant.py -i in.phonon -o FORCE_CONSTANTS -d 0.0001 -s -t 20 -r 2 2 2
+@endcode
+
+@par License
+This file is part of PARAPHOM and distributed under the GNU GPL v3.0.
 """
 
 from mpi4py import MPI
@@ -52,13 +67,9 @@ import os
 
 def parseOptions(comm):
     """
-    Parse command line options using argparse and broadcast to all MPI ranks.
-
-    Args:
-        comm: MPI communicator.
-
-    Returns:
-        argparse.Namespace: Parsed arguments.
+    @brief Parse command line options using argparse and broadcast to all MPI ranks.
+    @param comm MPI communicator.
+    @return argparse.Namespace Parsed arguments.
     """
     parser = argparse.ArgumentParser(description=print_logo(comm))
 
@@ -89,13 +100,11 @@ def parseOptions(comm):
 
 def printProgressBar(i,m,postText,n_bar=20):
     """
-    Prints a progress bar to the console.
-
-    Args:
-        i (int): Current iteration.
-        m (int): Total iterations.
-        postText (str): Text to display after the progress bar.
-        n_bar (int): Number of bars in the progress bar.
+    @brief Prints a progress bar to the console.
+    @param i Current iteration.
+    @param m Total iterations.
+    @param postText Text to display after the progress bar.
+    @param n_bar Number of bars in the progress bar.
     """
     j=i/m
     sys.stdout.write('\r')
@@ -107,14 +116,10 @@ def printProgressBar(i,m,postText,n_bar=20):
 
 def get_structure_from_lammps(lammps_input_file,show_log=False):
     """
-    Extracts structure information from a LAMMPS input file.
-
-    Args:
-        lammps_input_file (str): Path to the LAMMPS input file.
-        show_log (bool): If True, show LAMMPS log output.
-
-    Returns:
-        tuple: (number of atoms, lattice, type masses, atom types, masses, positions, crystal coordinates)
+    @brief Extract structure information from a LAMMPS input file.
+    @param lammps_input_file Path to the LAMMPS input file.
+    @param show_log If True, show LAMMPS log output.
+    @return Tuple (number of atoms, lattice, type masses, atom types, masses, positions, crystal coordinates)
     """
     cmd_list = ['-log', 'none']
     if not show_log:
@@ -164,15 +169,11 @@ def get_structure_from_lammps(lammps_input_file,show_log=False):
 
 def distribute(list_to_be_distributed, rank, size):
     """
-    Distributes a list or array among MPI ranks.
-
-    Args:
-        list_to_be_distributed (list or np.ndarray): List or numpy array to distribute.
-        rank (int): Current MPI rank.
-        size (int): Total number of MPI ranks.
-
-    Returns:
-        list: List local to the current rank.
+    @brief Distribute a list or array among MPI ranks.
+    @param list_to_be_distributed List or numpy array to distribute.
+    @param rank Current MPI rank.
+    @param size Total number of MPI ranks.
+    @return List local to the current rank.
     """
     from itertools import islice
     number_of_local_points = len(list_to_be_distributed)//size
@@ -195,19 +196,15 @@ def distribute(list_to_be_distributed, rank, size):
 
 def get_forces(lmp, id_, reference, natom, d,at_id,alpha):
     """
-    Displace a single atom and compute forces on all atoms.
-
-    Args:
-        lmp: LAMMPS object.
-        id_ (np.ndarray): Atom IDs.
-        reference (np.ndarray): Reference positions.
-        natom (int): Number of atoms.
-        d (float): Displacement value.
-        at_id (int): Atom index to displace.
-        alpha (int): Cartesian direction (0,1,2).
-
-    Returns:
-        np.ndarray: Forces on all atoms after displacement.
+    @brief Displace a single atom and compute forces on all atoms.
+    @param lmp LAMMPS object.
+    @param id_ Atom IDs.
+    @param reference Reference positions.
+    @param natom Number of atoms.
+    @param d Displacement value.
+    @param at_id Atom index to displace.
+    @param alpha Cartesian direction (0,1,2).
+    @return Forces on all atoms after displacement.
     """
     ref = np.copy(reference)
     ref[at_id,alpha] += d
@@ -226,18 +223,14 @@ def get_forces(lmp, id_, reference, natom, d,at_id,alpha):
 
 def get_force_constant(lammps_input_file,displacement,at_id,alpha,replicate,show_log=False):
     """
-    Compute force constants by finite difference for a given atom and direction.
-
-    Args:
-        lammps_input_file (str): Path to LAMMPS input file.
-        displacement (float): Displacement value.
-        at_id (int): Atom index to displace.
-        alpha (int): Cartesian direction (0,1,2).
-        replicate (list or np.ndarray): Replication factors for supercell.
-        show_log (bool): If True, show LAMMPS log output.
-
-    Returns:
-        np.ndarray: Force constant matrix for the displaced atom and direction.
+    @brief Compute force constants by finite difference for a given atom and direction.
+    @param lammps_input_file Path to LAMMPS input file.
+    @param displacement Displacement value.
+    @param at_id Atom index to displace.
+    @param alpha Cartesian direction (0,1,2).
+    @param replicate Replication factors for supercell.
+    @param show_log If True, show LAMMPS log output.
+    @return Force constant matrix for the displaced atom and direction.
     """
     cmd_list = ['-log', 'none']
     if not show_log:
@@ -301,14 +294,12 @@ def get_force_constant(lammps_input_file,displacement,at_id,alpha,replicate,show
 
 def symmetrize_fc(fc_file,comm,local_atoms,natom,no_of_iterations):
     """
-    Impose symmetry operations on the force constant matrix.
-
-    Args:
-        fc_file (str): Path to force constant HDF5 file.
-        comm: MPI communicator.
-        local_atoms (list): List of atom indices local to this rank.
-        natom (int): Number of atoms.
-        no_of_iterations (int): Number of symmetry iterations.
+    @brief Impose symmetry operations on the force constant matrix.
+    @param fc_file Path to force constant HDF5 file.
+    @param comm MPI communicator.
+    @param local_atoms List of atom indices local to this rank.
+    @param natom Number of atoms.
+    @param no_of_iterations Number of symmetry iterations.
     """
     f = h5py.File(fc_file,'r+',driver='mpio',comm=comm)
     data = f['force_constants']
@@ -324,11 +315,9 @@ def symmetrize_fc(fc_file,comm,local_atoms,natom,no_of_iterations):
 
 def acoustic_sum_rule(data,local_atoms):
     """
-    Impose the acoustic sum rule on the force constant matrix.
-
-    Args:
-        data (np.ndarray): Force constant matrix.
-        local_atoms (list): List of atom indices local to this rank.
+    @brief Impose the acoustic sum rule on the force constant matrix.
+    @param data Force constant matrix.
+    @param local_atoms List of atom indices local to this rank.
     """
     for i in local_atoms:
         for alpha in range(3):
@@ -341,12 +330,10 @@ def acoustic_sum_rule(data,local_atoms):
 
 def inversion_symmetry(data,local_atoms,natom):
     """
-    Impose inversion symmetry on the force constant matrix.
-
-    Args:
-        data (np.ndarray): Force constant matrix.
-        local_atoms (list): List of atom indices local to this rank.
-        natom (int): Number of atoms.
+    @brief Impose inversion symmetry on the force constant matrix.
+    @param data Force constant matrix.
+    @param local_atoms List of atom indices local to this rank.
+    @param natom Number of atoms.
     """
     for i in local_atoms:
         for j in range(i,natom):
@@ -359,17 +346,13 @@ def inversion_symmetry(data,local_atoms,natom):
 
 def p2s_map(lat,lammps_input_file, replicate,natom,crys):
     """
-    Compute the mapping from primitive cell to supercell atom indices.
-
-    Args:
-        lat (np.ndarray): Lattice vectors.
-        lammps_input_file (str): Path to LAMMPS input file.
-        replicate (list or np.ndarray): Replication factors for supercell.
-        natom (int): Number of atoms in the primitive cell.
-        crys (np.ndarray): Crystal coordinates of atoms in the primitive cell.
-
-    Returns:
-        tuple: (p2s_map, p_indices)
+    @brief Compute the mapping from primitive cell to supercell atom indices.
+    @param lat Lattice vectors.
+    @param lammps_input_file Path to LAMMPS input file.
+    @param replicate Replication factors for supercell.
+    @param natom Number of atoms in the primitive cell.
+    @param crys Crystal coordinates of atoms in the primitive cell.
+    @return Tuple (p2s_map, p_indices)
     """
     cmd_list = ['-log', 'none', '-echo', 'none', '-screen', 'none']
     lmp = lammps(cmdargs=cmd_list)
@@ -395,10 +378,8 @@ def p2s_map(lat,lammps_input_file, replicate,natom,crys):
 
 def print_logo(comm):
     """
-    Print the program logo and credits.
-
-    Args:
-        comm: MPI communicator.
+    @brief Print the program logo and credits.
+    @param comm MPI communicator.
     """
     r = comm.Get_rank()
     if r == 0:
@@ -432,7 +413,7 @@ def print_logo(comm):
 
 def main():
     """
-    Main function to generate force constants and optionally symmetrize them.
+    @brief Main function to generate force constants and optionally symmetrize them.
 
     Initializes MPI, parses arguments, extracts structure, distributes work, computes force constants,
     writes to HDF5, and applies symmetrization if requested.
