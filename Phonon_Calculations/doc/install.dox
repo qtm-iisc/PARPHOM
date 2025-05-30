@@ -1,0 +1,24 @@
+/** \page install Installation Instructions
+
+To install PARPHOM Phonon Calculations, follow these steps:
+
+1. **Install Prerequisites**
+   - MPI
+   - Intel MKL
+   - Parallel HDF5 (12.0 or later)
+
+   Ensure these libraries are installed and available on your system.
+
+2. **Configure the Makefile**
+   - Example makefiles are provided for Intel and AMD libraries:
+     - `Makefile.intel` (for Intel compilers and libraries)
+     - `Makefile.amd` (for AMD compilers and libraries)
+   - Copy the appropriate makefile and edit as needed for your environment.
+
+3. **Build the Code**
+   - Use the configured makefile to compile the code:
+     - For Intel: `make -f Makefile.intel`
+     - For AMD: `make -f Makefile.amd`
+
+For more details, refer to the README or contact the maintainers.
+*/

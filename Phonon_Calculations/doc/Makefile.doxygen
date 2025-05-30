@@ -1,0 +1,13 @@
+# Makefile for generating Doxygen documentation for Phonon_Calculations
+
+DOXYGEN = doxygen
+DOXYFILE = Doxyfile
+
+.PHONY: doc clean
+
+doc:
+	$(DOXYGEN) $(DOXYFILE)
+
+clean:
+	rm -rf html
+	echo "Documentation cleaned."

@@ -1,0 +1,45 @@
+/**
+@mainpage PARPHOM Documentation
+
+@section intro Introduction
+PARPHOM (PARallel PHOnon calculator for Moiré systems) is a high-performance computational package designed for phonon calculations in moiré materials and 2D systems. It provides efficient parallel implementations for computing phonon properties using distributed memory architecture.
+
+@section features Key Features
+- Parallel computation of phonon properties using MPI
+- HDF5-based I/O for efficient data handling
+- Force constant generation and phonon calculations
+- Support for various 2D materials and twisted bilayer systems
+- Analysis tools for phonon band structures, DOS, and group velocities
+
+@section struct Project Structure
+- @b Force_Constant_Generation/ - Generation of force constants
+  - Python interface with LAMMPS for force calculations
+  - Modified phonopy routines for force constant generation
+  - Examples for various 2D materials and twist angles
+
+- @b Phonon_Calculations/ - Core computational engine
+  - @b SRC/ - Fortran source files for parallel computation
+    - Force constant and dynamical matrix calculations
+    - MPI and BLACS parallel routines
+    - HDF5-based I/O functions
+  - @b Examples/ - Example calculations for various systems
+    - Twisted bilayer graphene (TBLG)
+    - Twisted TMD systems (MoS2, WSe2)
+    - Input files and analysis scripts
+
+- @b Utilities/ - Post-processing and analysis tools
+  - Python modules for data analysis and visualization
+  - Density of states (DOS) calculations
+  - Band structure extraction and plotting
+  - Finite temperature properties
+  - Progress tracking and parallel distribution utilities
+
+@section authors Authors
+- Shinjan Mandal
+- Indrajit Maity
+- H. R. Krishnamurthy
+- Manish Jain
+
+@section refs References
+arXiv:2410.21075 [cond-mat.mes-hall]
+*/
