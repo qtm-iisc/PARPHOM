@@ -8,8 +8,8 @@ The prerequisites to run this code are:
 
 >
 >   MPI  
->   Parallel HDF5 (checked for v1.12.0.0 and v1.12.1)   
->   Scalapack (checked with Intel MKL and AMD Scalapack)  
+> [Parallel HDF5](https://support.hdfgroup.org/documentation/hdf5/latest/_cookbook.html)
+>   [ScaLAPACK](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html)  
 >
 
 ## Instructions for usage
@@ -102,9 +102,6 @@ Run the code as
 ```
 mpiexec -np <no. of cores> parphom.x <input file>
 ```
-
-
-**For post processing refer to the README and examples in the Utilities folder**
 
 
 ## Known Issues
