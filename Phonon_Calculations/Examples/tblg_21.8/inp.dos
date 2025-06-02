@@ -40,4 +40,4 @@ abstol                       : 1E-16
 orfac                        : 1E-16
 
 output file name             : phbands_21.8_dos_15X15
-output_file_location         : ./ #/home/mshinjan/Phonons/MoirePhonons/Phonon_Calculations/Examples/Phonopy_Comparision
+output_file_location         : ./
